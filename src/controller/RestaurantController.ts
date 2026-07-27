@@ -101,7 +101,7 @@ export default class RestaurantController {
     public updatePassword = async (req: Request, res: Response): Promise<void> => {
         try {
             const dto: ConfirmPasswordResetDTO = req.body;
-            const user = await this.services.authenticateUser(req)
+            const user = await this.services.authenticateRestaurant(req)
             await this.restaurantBusiness.updatePassword(dto, user.id);
 
             res.status(200).json({ message: "Password updated successfully" });

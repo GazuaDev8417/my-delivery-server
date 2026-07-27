@@ -40,7 +40,7 @@ export default class EmailService{
         const providerUrl = process.env.PROVIDER_CLIENT_URL
 
         const info = await this.transporter.sendMail({
-            from: 'My Delivery app',
+            from: 'My Delivery Provider app',
             to: email,
             subject: 'Password reset request',
             html: `
@@ -49,10 +49,6 @@ export default class EmailService{
                 <p>This code expires in 15 minutes</p>
             `
         })
-
-        const resetUrl = `${process.env.PROVIDER_CLIENT_URL}/reset-request?token=${token}`
-
-        console.log("RESET URL:", resetUrl)
         
         const previewUrl = nodemailer.getTestMessageUrl(info)
         if(!previewUrl){
