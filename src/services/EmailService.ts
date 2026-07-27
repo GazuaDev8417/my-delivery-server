@@ -15,6 +15,12 @@ export default class EmailService{
 
     public sendPasswordResetEmail = async(email:string, token:string):Promise<string>=>{
         const customertUrl = process.env.CUSTOMER_CLIENT_URL
+        const url = `${customertUrl}/reset-request?anything=${token}`;
+
+        console.log({
+            customertUrl,
+            url
+        });
 
         const info = await this.transporter.sendMail({
             from: 'My Delivery app',
