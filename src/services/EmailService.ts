@@ -15,12 +15,6 @@ export default class EmailService{
 
     public sendPasswordResetEmail = async(email:string, token:string):Promise<string>=>{
         const customertUrl = process.env.CUSTOMER_CLIENT_URL
-        const url = `${customertUrl}/reset-request?anything=${token}`;
-
-        console.log({
-            customertUrl,
-            url
-        });
 
         const info = await this.transporter.sendMail({
             from: 'My Delivery app',
@@ -44,12 +38,6 @@ export default class EmailService{
     
     public restaurantPasswordResetEmail = async(email:string, token:string):Promise<string>=>{
         const providerUrl = process.env.PROVIDER_CLIENT_URL
-        const url = `${providerUrl}/reset-request?anything=${token}`;
-
-        console.log({
-            providerUrl,
-            url
-        });
 
         const info = await this.transporter.sendMail({
             from: 'My Delivery app',
@@ -61,6 +49,10 @@ export default class EmailService{
                 <p>This code expires in 15 minutes</p>
             `
         })
+
+        const resetUrl = `${process.env.PROVIDER_CLIENT_URL}/reset-request?token=${token}`
+
+        console.log("RESET URL:", resetUrl)
         
         const previewUrl = nodemailer.getTestMessageUrl(info)
         if(!previewUrl){
