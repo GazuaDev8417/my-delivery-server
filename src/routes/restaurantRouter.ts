@@ -1,0 +1,30 @@
+import { Router } from "express";
+import { upload, uploadToCloudinary } from "../config/multer";
+import RestaurantController from "../controller/RestaurantController";
+import RestaurantBusiness from "../business/RestaurantBusiness";
+import RestaurantData from "../data/RestaurantData";
+import Services from "../services/Authentication";
+import TokenService from "../services/TokenService";
+
+export const restaurantRouter = Router();
+
+// Instantiating dependencies
+const services = new Services();
+const tokenService = new TokenService()
+const restaurantData = new RestaurantData();
+const restaurantBusiness = new RestaurantBusiness(restaurantData, services, tokenService);
+const restaurantController = new RestaurantController(restaurantBusiness, services);
+
+// Authentication & Profile routes
+restaurantRouter.post("/signup", restaurantController.signupRestaurant);
+restaurantRouter.post("/login", restaurantController.loginRestaurant);
+restaurantRouter.get("/profile", restaurantController.getRestaurantById);
+restaurantRouter.get("/", restaurantController.getRestaurant);
+
+// Products routes
+restaurantRouter.get("/products", restaurantController.getAllProducts);
+restaurantRouter.get("/product/:id", restaurantController.getProductById);
+restaurantRouter.post("/product", upload.single('image'), uploadToCloudinary, restaurantController.insertProduct);
+restaurantRouter.put("/product/:id", upload.single('image'), uploadToCloudinary, restaurantController.updateProduct);
+restaurantRouter.put("/update", restaurantController.updateRestaurant);
+restaurantRouter.delete("/product/:id", restaurantController.deleteProduct);
