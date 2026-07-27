@@ -3,7 +3,9 @@ import RestaurantBusiness, {
     SignupRestaurantDTO, 
     LoginDTO, 
     CreateAndUpdateProductDTO,
-    UpdateRestaurantDTO
+    UpdateRestaurantDTO,
+    RequestPasswordResetDTO,
+    ConfirmPasswordResetDTO
 } from "../business/RestaurantBusiness";
 import Services, { AppError } from "../services/Authentication";
 
@@ -80,6 +82,29 @@ export default class RestaurantController {
             const restaurant = await this.restaurantBusiness.getRestaurant();
 
             res.status(200).json(restaurant);
+        } catch (error: any) {
+            this.handleError(res, error);
+        }
+    };
+
+    public requestPasswordReset = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const dto: RequestPasswordResetDTO = req.body;
+            const previewUrl = await this.restaurantBusiness.requestPasswordReset(dto);
+
+            res.status(200).json(previewUrl);
+        } catch (error: any) {
+            this.handleError(res, error);
+        }
+    };
+
+    public updatePassword = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const dto: ConfirmPasswordResetDTO = req.body;
+            const user = await this.services.authenticateUser(req)
+            await this.restaurantBusiness.updatePassword(dto, user.id);
+
+            res.status(200).json({ message: "Password updated successfully" });
         } catch (error: any) {
             this.handleError(res, error);
         }

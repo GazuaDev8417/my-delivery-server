@@ -47,6 +47,7 @@ export default class DatabaseManager extends ConnectToDatabase{
                 await this.con.schema.createTable(this.RESET_PASSWORD_TABLE, (table)=>{
                     table.string('id', 36).primary().notNullable()
                     table.string('user_id', 36).notNullable().references('id').inTable(this.USER_TABLE).onDelete('CASCADE')
+                    table.string('restaurant_id', 36).notNullable().references('id').inTable(this.RESTAURANT_TABLE).onDelete('CASCADE')
                     table.string('token').notNullable()
                     table.timestamp('expires_at').notNullable()
                     table.boolean('used').defaultTo(false).notNullable()

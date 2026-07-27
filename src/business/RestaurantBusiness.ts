@@ -2,6 +2,7 @@ import RestaurantData from "../data/RestaurantData"
 import Restaurant from "../model/Restaurant"
 import Product from "../model/Products"
 import Services, { AppError } from "../services/Authentication"
+import EmailService from "../services/EmailService"
 import TokenService from "../services/TokenService"
 import { ProductModel, RestaurantModel } from "../model/typesAndInterfaces"
 
@@ -19,7 +20,6 @@ export interface SignupRestaurantDTO{
 
 export interface UpdateRestaurantDTO{
     name:string
-    email:string
     phone:string
     address:string
 }
@@ -27,6 +27,15 @@ export interface UpdateRestaurantDTO{
 export interface LoginDTO{
     email?:string
     password?:string
+}
+
+export interface RequestPasswordResetDTO {
+    email?: string
+}
+
+export interface ConfirmPasswordResetDTO {
+    newPassword?: string
+    confirmNewPassword?: string
 }
 
 export interface CreateAndUpdateProductDTO{
@@ -48,7 +57,8 @@ export default class RestaurantBusiness{
     constructor(
         private restaurantData:RestaurantData,
         private services:Services,
-        private tokenService:TokenService
+        private tokenService:TokenService,
+        private emailService:EmailService
     ){}
 
     
@@ -118,17 +128,13 @@ export default class RestaurantBusiness{
 
 
     public updateRestaurant = async (providerId: string, dto: UpdateRestaurantDTO): Promise<void> => {
-        const { name, email, phone, address } = dto
+        const { name, phone, address } = dto
 
-        if (!name || !email || !phone || !address) {
+        if (!name || !phone || !address) {
             throw new AppError(400, "Please fill in all required profile fields")
         }
 
-        if (!this.EMAIL_REGEX.test(email)) {
-            throw new AppError(400, "Invalid email format")
-        }
-
-        await this.restaurantData.updateRestaurant(providerId, name, email, address, phone)
+        await this.restaurantData.updateRestaurant(providerId, name, address, phone)
     }
 
 
@@ -139,6 +145,48 @@ export default class RestaurantBusiness{
         }
 
         return restaurant
+    }
+
+    
+    public requestPasswordReset = async (dto: RequestPasswordResetDTO): Promise<string> => {
+        const { email } = dto
+
+        if (!email) {
+            throw new AppError(400, "Email address is required")
+        }
+
+        const user = await this.restaurantData.findRestaurantByEmail(email)
+        if (!user) {
+            return `As this is a demonstration you have to insert disk90@email.com to be redirected to a test email account and reset your password`
+        }
+        
+        const resetToken = this.tokenService.generateResetToken(user.id)
+
+        await this.restaurantData.saveResetToken(user.id, resetToken)
+        const previewUrl = await this.emailService.restaurantPasswordResetEmail(email, resetToken)
+
+        return previewUrl
+    }
+
+
+    public updatePassword = async (dto: ConfirmPasswordResetDTO, restaurantId:string): Promise<void> => {
+        const { newPassword, confirmNewPassword } = dto
+
+        if (!confirmNewPassword || !newPassword) {
+            throw new AppError(400, "Missing email, token, or new password")
+        }
+
+        if (newPassword.length < 6) {
+            throw new AppError(400, "New password must be at least 6 characters")
+        }
+
+        if (newPassword !== confirmNewPassword) {
+            throw new AppError(400, "Passwords do not matach")
+        }
+
+        const hashedPassword = this.services.hashPassword(newPassword)
+        await this.restaurantData.updatePassword(restaurantId, hashedPassword)
+        await this.restaurantData.clearResetToken(restaurantId)
     }
 
 // ====================== PRODUCTS =============================== 
