@@ -38,6 +38,12 @@ export default class EmailService{
     
     public restaurantPasswordResetEmail = async(email:string, token:string):Promise<string>=>{
         const providerUrl = process.env.PROVIDER_CLIENT_URL
+        const url = `${providerUrl}/reset-request?anything=${token}`;
+
+        console.log({
+            providerUrl,
+            url
+        });
 
         const info = await this.transporter.sendMail({
             from: 'My Delivery app',
