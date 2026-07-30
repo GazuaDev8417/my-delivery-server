@@ -100,6 +100,7 @@ export default class DatabaseManager extends ConnectToDatabase{
                     table.string('name', 50).notNullable()
                     table.string('photoUrl', 255)
                     table.decimal('price', 10, 2).notNullable()
+                    table.integer('stock').notNullable()
                 })
 
                 console.log(`${this.PRODUCT_TABLE} table was created successfully`)

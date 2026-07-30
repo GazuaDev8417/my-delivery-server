@@ -10,20 +10,35 @@ export default abstract class ConnectToDatabase{
         connection: process.env.MYDELIVERY_DB
     })
 
-    public static testConnexion = async():Promise<void>=>{
-        try{
+    protected static dbSecondary = knex({
+        client: 'pg',
+        connection: process.env.DASHBOARD_DB        
+    })
 
+    
+    public static testMyDeliveryConnexion = async():Promise<void>=>{
+        try{
             await this.con.raw('SELECT 1+1 AS result')
-            console.log('Connected to database')
+            console.log('Connected to My Delivery database')
         }catch(e){
-            console.log(`Failed to connect to database ${e}`)
+            console.log(`Failed to connect to My Delivery database ${e}`)
+        }
+    }
+
+    public static testMyDashboardConnexion = async():Promise<void>=>{
+        try{
+            await this.con.raw('SELECT 1+1 AS result')
+            console.log('Connected to Dashboard database')
+        }catch(e){
+            console.log(`Failed to connect to Dashboard database ${e}`)
         }
     }
 }
 
 
 (async()=>{
-    await ConnectToDatabase.testConnexion()
+    await ConnectToDatabase.testMyDeliveryConnexion()
+    await ConnectToDatabase.testMyDashboardConnexion()
 })()
 
 

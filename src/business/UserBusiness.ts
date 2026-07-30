@@ -67,16 +67,33 @@ export default class UserBusiness{
         }
 
         const registeredUser = await this.userData.findByEmail(email)
-        if (registeredUser) {
-            throw new AppError(409, "User with this email is already registered")
+        const registeredDbSecondaryUser = await this.userData.findDbSecondaryByEmail(email)
+
+        if (registeredUser && registeredDbSecondaryUser) {
+            throw new AppError(409, "This user is already registered in both databases")
+        }
+
+        if(registeredUser && !registeredDbSecondaryUser){
+            await this.userData.deleteUserByEmail(email)
+        }
+
+        if(!registeredUser && registeredDbSecondaryUser){
+            await this.userData.deleteSecondaryDBUserByEmail(email)
         }
 
         const id = this.services.idGenerator()
         const hashedPassword = this.services.hashPassword(password)
         const token = this.tokenService.generateToken(id)
-
         const user = new User(id, name, email, phone, hashedPassword)
+
         await this.userData.createUser(user)
+        
+        try{
+            await this.userData.createSecondaryDBUser(user)
+        }catch(e){
+            await this.userData.deleteUserByEmail(email)
+            throw new AppError(500, 'Registration failed on secondary database')
+        }
 
         return token
     }

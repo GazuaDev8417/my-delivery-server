@@ -21,6 +21,7 @@ export default class UserData extends ConnectToDatabase{
     protected USER_TABLE = 'users'
     protected ORDER_TABLE = 'orders'
     protected RESET_PASSWORD_TABLE = 'reset_password'
+    protected CUSTOMER_TABLE = 'Customer'
 
 //USER FIELD 
     public createUser = async (user: User): Promise<void> => {
@@ -31,9 +32,24 @@ export default class UserData extends ConnectToDatabase{
                 email: user.getEmail(),
                 phone: user.getPhone(),
                 password: user.getPassword()
-            });
+            })
         } catch (error: any) {
-            throw new Error(`Failed to create user: ${error.message || error}`)
+            throw new Error(`Failed to create primary database user: ${error.message || error}`)
+        }
+    }
+
+    
+    public createSecondaryDBUser = async (user: User): Promise<void> => {
+        try {
+            await ConnectToDatabase.dbSecondary(this.CUSTOMER_TABLE).insert({
+                name: user.getUsername(),
+                email: user.getEmail(),
+                phone: user.getPhone(),
+                status: 'Active'
+            })
+        } catch (error: any) {
+            console.log('Error on secondary', error)
+            throw new Error(`Failed to create secondary database user: ${error.message || error}`)
         }
     }
 
@@ -81,6 +97,18 @@ export default class UserData extends ConnectToDatabase{
                 .where({ email })
 
             return user
+        } catch (error: any) {
+            throw new Error(`Failed to fetch user by email: ${error.message || error}`)
+        }
+    }
+
+
+    public findDbSecondaryByEmail = async (email: string): Promise<UserModel | undefined> => {
+        try {
+            const [dbSecondaryuser] = await ConnectToDatabase.dbSecondary(this.CUSTOMER_TABLE)
+                .where({ email })
+
+            return dbSecondaryuser
         } catch (error: any) {
             throw new Error(`Failed to fetch user by email: ${error.message || error}`)
         }
@@ -164,6 +192,33 @@ export default class UserData extends ConnectToDatabase{
             })
         } catch (error: any) {
             throw new Error(`Failed to delete user and associated orders: ${error.message || error}`)
+        }
+    }
+
+
+    public deleteUserByEmail = async (email: string): Promise<void> => {
+        const connection = ConnectToDatabase.con
+        const user = await this.findByEmail(email)
+
+        try {
+            await connection.transaction(async (trx) => {
+                await trx(this.ORDER_TABLE).del().where({ client: user?.id })
+                await trx(this.USER_TABLE).del().where({ email })
+            })
+        } catch (error: any) {
+            throw new Error(`Failed to delete user and associated orders: ${error.message || error}`)
+        }
+    }
+
+
+    public deleteSecondaryDBUserByEmail = async (email: string): Promise<void> => {
+        const connection = ConnectToDatabase.con
+        const user = await this.findByEmail(email)
+
+        try {
+            await ConnectToDatabase.dbSecondary(this.CUSTOMER_TABLE).del().where({ email })
+        } catch (error: any) {
+            throw new Error(`Failed to delete secondary database user: ${error.message || error}`)
         }
     }
 
