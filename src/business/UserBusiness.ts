@@ -29,6 +29,7 @@ export interface ConfirmPasswordResetDTO {
 
 export interface UpdateUserProfileDTO {
     username?: string
+    email?: string
     phone?: string
 }
 
@@ -191,19 +192,19 @@ export default class UserBusiness{
 
 
     public updateUser = async (userId: string, dto: UpdateUserProfileDTO): Promise<void> => {
-        const { username, phone } = dto
+        const { username, email, phone } = dto
 
-        if (!username || !phone) {
+        if (!username || !email || !phone) {
             throw new AppError(400, "Please fill in all required profile fields")
         }
 
-        const secondaryDBUser = await this.userData.findSecondaryDBUserByPhone(phone)
+        const secondaryDBUser = await this.userData.findDbSecondaryByEmail(email)
         if(!secondaryDBUser){
             throw new AppError(404, 'User from secondary database not found')
         }
-
-        await this.userData.updateUser(userId, username, phone)
-        await this.userData.updateSecondaryDBUser(userId, username, phone)
+        
+        await this.userData.updateUser(userId, username, email, phone)
+        await this.userData.updateSecondaryDBUser(secondaryDBUser.id, username, email, phone)
     }
 
 

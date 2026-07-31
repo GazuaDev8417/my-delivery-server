@@ -21,7 +21,7 @@ export default class UserData extends ConnectToDatabase{
     protected USER_TABLE = 'users'
     protected ORDER_TABLE = 'orders'
     protected RESET_PASSWORD_TABLE = 'reset_password'
-    protected CUSTOMER_TABLE = 'Customer'
+    protected CUSTOMER_TABLE = 'customer'
 
 //USER FIELD 
     public createUser = async (user: User): Promise<void> => {
@@ -115,18 +115,6 @@ export default class UserData extends ConnectToDatabase{
     }
 
 
-    public findSecondaryDBUserByPhone = async (phone: string): Promise<UserModel | undefined> => {
-        try {
-            const [user] = await ConnectToDatabase.con(this.CUSTOMER_TABLE)
-                .where({ phone })
-
-            return user
-        } catch (error: any) {
-            throw new Error(`Failed to fetch user by email: ${error.message || error}`)
-        }
-    }
-
-
     public saveResetToken = async (user_id: string, token: string): Promise<void> => {
         try {
             await ConnectToDatabase.con(this.RESET_PASSWORD_TABLE)
@@ -183,10 +171,10 @@ export default class UserData extends ConnectToDatabase{
     }
 
 
-    public updateUser = async (id: string, username: string, phone: string): Promise<void> => {
+    public updateUser = async (id: string, username: string, email: string, phone: string): Promise<void> => {
         try {
             await ConnectToDatabase.con(this.USER_TABLE)
-                .update({ username, phone })
+                .update({ username, email, phone })
                 .where({ id })
         } catch (error: any) {
             throw new Error(`Failed to update user profile: ${error.message || error}`)
@@ -194,10 +182,10 @@ export default class UserData extends ConnectToDatabase{
     }
 
 
-    public updateSecondaryDBUser = async (id: string, username: string, phone: string): Promise<void> => {
+    public updateSecondaryDBUser = async (id: string, username: string, email: string, phone: string): Promise<void> => {
         try {
-            await ConnectToDatabase.con(this.CUSTOMER_TABLE)
-                .update({ name: username, phone })
+            await ConnectToDatabase.dbSecondary(this.CUSTOMER_TABLE)
+                .update({ name: username, email, phone })
                 .where({ id })
         } catch (error: any) {
             throw new Error(`Failed to update user profile from secondary database: ${error.message || error}`)
