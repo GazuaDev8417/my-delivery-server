@@ -70,7 +70,7 @@ export default class UserBusiness{
         const registeredDbSecondaryUser = await this.userData.findDbSecondaryByEmail(email)
 
         if (registeredUser && registeredDbSecondaryUser) {
-            throw new AppError(409, "This user is already registered in both databases")
+            throw new AppError(409, "You have already been registered")
         }
 
         if(registeredUser && !registeredDbSecondaryUser){
@@ -197,7 +197,13 @@ export default class UserBusiness{
             throw new AppError(400, "Please fill in all required profile fields")
         }
 
+        const secondaryDBUser = await this.userData.findSecondaryDBUserByPhone(phone)
+        if(!secondaryDBUser){
+            throw new AppError(404, 'User from secondary database not found')
+        }
+
         await this.userData.updateUser(userId, username, phone)
+        await this.userData.updateSecondaryDBUser(userId, username, phone)
     }
 
 

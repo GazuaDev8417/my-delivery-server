@@ -34,6 +34,7 @@ export interface ProductModel{
     photoUrl:string
     price:number
     provider:string
+    stock:number
 }
 
 export interface OrderModel{

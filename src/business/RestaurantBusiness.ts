@@ -5,6 +5,7 @@ import Services, { AppError } from "../services/Authentication"
 import EmailService from "../services/EmailService"
 import TokenService from "../services/TokenService"
 import { ProductModel, RestaurantModel } from "../model/typesAndInterfaces"
+import SecondaryDBProduct from "../model/SecondaryDBProducts"
 
 
 
@@ -43,7 +44,8 @@ export interface CreateAndUpdateProductDTO{
     description:string
     name:string
     price:number
-    image:string
+    image:string,
+    stock:number
 }
 
 
@@ -191,26 +193,45 @@ export default class RestaurantBusiness{
 
 // ====================== PRODUCTS =============================== 
     public insertProduct = async (productDTO: CreateAndUpdateProductDTO): Promise<void> => {
-        const { category, description, name, price, image } = productDTO
+        const { category, description, name, price, image, stock } = productDTO
+        const status = stock === 0 ? 'Inactive' : stock < 10 ? 'Low Stock' : 'Active'
 
-        if (!category || !description || !name || !price) {
+        if (!category || !description || !name || !price || !stock) {
             throw new AppError(400, "Please fill in all required product fields")
         }
 
-        const existingProduct = await this.restaurantData.findProductByName(name)
-        if (
-            existingProduct?.category === category &&
-            existingProduct?.name === name &&
-            existingProduct?.description === description
-        ) {
-            throw new AppError(409, `Product '${existingProduct.name}' is already registered`)
+        const existingProduct = await this.restaurantData.findProduct(name, category, description)
+        const existingSecondaryDBProduct = await this.restaurantData.findSecondaryDBProduct(name, category, description)
+
+        if (existingProduct && existingSecondaryDBProduct) {
+            throw new AppError(409, "This product is already registered in both databases")
         }
+
+        if(existingProduct && !existingSecondaryDBProduct){
+            await this.restaurantData.deleteProductBySomeFields(name, category, description)
+        }
+
+        if(!existingProduct && existingSecondaryDBProduct){
+            await this.restaurantData.deleteSecProductBySomeFields(name, category, description)
+        }
+        
 
         const id = this.services.idGenerator()
         const product = new Product(category, description, id, name, price, image)
+        const secondaryProduct = new SecondaryDBProduct(name, description, category, price, stock, status)
 
+        console.log('why')
         await this.restaurantData.insertProduct(product)
-    };
+
+        try{
+            console.log('whats wrong')
+            await this.restaurantData.insertSecondaryDBProduct(secondaryProduct)
+        }catch(e){
+            console.log(e)
+            await this.restaurantData.deleteProductBySomeFields(name, category, description)
+            throw new AppError(500, 'Registration failed on secondary database')
+        }
+    }
 
 
     public updateProduct = async (productId: string, updateDTO: CreateAndUpdateProductDTO): Promise<void> => {

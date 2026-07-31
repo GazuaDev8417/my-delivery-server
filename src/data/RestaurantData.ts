@@ -2,6 +2,7 @@ import ConnectToDatabase from "./Connexion"
 import { v4 as uuidv4 } from 'uuid'
 import Restaurant from "../model/Restaurant"
 import Product from "../model/Products"
+import SecondayDBProduct from "../model/SecondaryDBProducts"
 import { ProductModel, RestaurantModel } from "../model/typesAndInterfaces"
 
 
@@ -10,6 +11,7 @@ export default class RestaurantData extends ConnectToDatabase{
     protected RESTAURANT_TABLE = 'restaurants'
     protected PRODUCT_TABLE = 'products'
     protected RESET_PASSWORD_TABLE = 'reset_password'
+    protected SECONDARY_DB_PRODUCT = 'Product'
 
 
     public createRestaurant = async (restaurant: Restaurant): Promise<void> => {
@@ -126,6 +128,17 @@ export default class RestaurantData extends ConnectToDatabase{
     }
 
 
+    public insertSecondaryDBProduct = async(secondaryDBProduct:SecondayDBProduct):Promise<void>=>{
+        try{
+            
+            await secondaryDBProduct.save()
+
+        }catch(e:any){
+            throw new Error(`Error inserting product: ${e.message || e}`)
+        }
+    }
+
+
     public updateProduct = async(
         id:string, 
         category:string, 
@@ -146,10 +159,30 @@ export default class RestaurantData extends ConnectToDatabase{
     }
 
 
-    public findProductByName = async(name:string):Promise<ProductModel | undefined>=>{
+    public findProduct = async(name:string, category:string, description:string):Promise<ProductModel | undefined>=>{
         try{
 
-            const [product] = await ConnectToDatabase.con(this.PRODUCT_TABLE).where({ name })
+            const [product] = await ConnectToDatabase.con(this.PRODUCT_TABLE).where({
+                name,
+                category,
+                description
+            })
+
+            return product
+        }catch(e:any){
+            throw new Error(`Error fetching product by name: ${e.message || e}`)
+        }
+    }
+
+
+    public findSecondaryDBProduct = async(name:string, category:string, description:string):Promise<ProductModel | undefined>=>{
+        try{
+
+            const [product] = await ConnectToDatabase.con(this.PRODUCT_TABLE).where({
+                name,
+                category,
+                description
+            })
 
             return product
         }catch(e:any){
@@ -187,6 +220,36 @@ export default class RestaurantData extends ConnectToDatabase{
         try{
 
             await ConnectToDatabase.con(this.PRODUCT_TABLE).where({ id }).del()
+
+        }catch(e:any){
+            throw new Error(`Error deleting product: ${e.message || e}`)
+        }
+    }
+
+
+    public deleteProductBySomeFields = async(name:string, category:string, description:string):Promise<void>=>{
+        try{
+
+            await ConnectToDatabase.con(this.PRODUCT_TABLE).where({
+                name,
+                category,
+                description
+            }).del()
+
+        }catch(e:any){
+            throw new Error(`Error deleting product: ${e.message || e}`)
+        }
+    }
+
+
+    public deleteSecProductBySomeFields = async(name:string, category:string, description:string):Promise<void>=>{
+        try{
+
+            await ConnectToDatabase.con(this.SECONDARY_DB_PRODUCT).where({
+                name,
+                category,
+                description
+            }).del()
 
         }catch(e:any){
             throw new Error(`Error deleting product: ${e.message || e}`)

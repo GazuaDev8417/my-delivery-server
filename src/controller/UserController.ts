@@ -32,10 +32,7 @@ export default class UserController {
             const signupDTO: SignupDTO = req.body;
             const token = await this.userBusiness.signup(signupDTO);
 
-            res.status(201).json({
-                message: "User registered successfully",
-                token
-            });
+            res.status(201).json(token)
         } catch (error: any) {
             this.handleError(res, error);
         }

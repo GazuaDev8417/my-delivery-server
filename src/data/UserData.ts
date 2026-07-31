@@ -115,6 +115,18 @@ export default class UserData extends ConnectToDatabase{
     }
 
 
+    public findSecondaryDBUserByPhone = async (phone: string): Promise<UserModel | undefined> => {
+        try {
+            const [user] = await ConnectToDatabase.con(this.CUSTOMER_TABLE)
+                .where({ phone })
+
+            return user
+        } catch (error: any) {
+            throw new Error(`Failed to fetch user by email: ${error.message || error}`)
+        }
+    }
+
+
     public saveResetToken = async (user_id: string, token: string): Promise<void> => {
         try {
             await ConnectToDatabase.con(this.RESET_PASSWORD_TABLE)
@@ -178,6 +190,17 @@ export default class UserData extends ConnectToDatabase{
                 .where({ id })
         } catch (error: any) {
             throw new Error(`Failed to update user profile: ${error.message || error}`)
+        }
+    }
+
+
+    public updateSecondaryDBUser = async (id: string, username: string, phone: string): Promise<void> => {
+        try {
+            await ConnectToDatabase.con(this.CUSTOMER_TABLE)
+                .update({ name: username, phone })
+                .where({ id })
+        } catch (error: any) {
+            throw new Error(`Failed to update user profile from secondary database: ${error.message || error}`)
         }
     }
     

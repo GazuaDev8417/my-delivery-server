@@ -8,6 +8,9 @@ import RestaurantBusiness, {
     ConfirmPasswordResetDTO
 } from "../business/RestaurantBusiness";
 import Services, { AppError } from "../services/Authentication";
+import type { ProductModel } from "../model/typesAndInterfaces";
+
+
 
 export default class RestaurantController {
     constructor(
