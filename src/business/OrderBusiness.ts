@@ -19,6 +19,7 @@ export interface CreateOrderDTO{
     momentString: string
     photoUrl: string
     description: string
+    providerId: string
 
 }
 
@@ -37,7 +38,7 @@ export default class OrderBusiness{
     ){}
 
     public createOrder = async(user:UserModel, orderDataDTO:CreateOrderDTO):Promise<void>=>{
-        const { product, price, quantity, momentString, photoUrl, description } = orderDataDTO
+        const { product, price, quantity, momentString, photoUrl, description, providerId } = orderDataDTO
 
         if (!product || !price || !quantity) {
             throw new AppError(400, "Missing required order fields");
@@ -63,7 +64,8 @@ export default class OrderBusiness{
             user.id,
             'REQUESTED',
             address,
-            description
+            description,
+            providerId
         )
 
         await this.orderData.createOrder(order)
@@ -162,8 +164,8 @@ export default class OrderBusiness{
     }
 
 
-    public getAllOrders = async():Promise<OrderModel[]>=>{
-        const orders = await this.orderData.findAllOrders()
+    public getAllOrders = async(providerId:string):Promise<OrderModel[]>=>{
+        const orders = await this.orderData.findAllOrders(providerId)
         //await this.removeExpiredOrders(orders)
         
         if(orders.length === 0){

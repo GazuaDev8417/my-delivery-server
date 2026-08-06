@@ -149,8 +149,8 @@ export default class OrderController {
 
     public getAllOrders = async (req: Request, res: Response): Promise<void> => {
         try {
-            await this.services.authenticateRestaurant(req);
-            const orders = await this.orderBusiness.getAllOrders();
+            const restaurant = await this.services.authenticateRestaurant(req);
+            const orders = await this.orderBusiness.getAllOrders(restaurant.id);
 
             res.status(200).json(orders);
         } catch (error: any) {

@@ -45,10 +45,11 @@ export default class OrderData extends ConnectToDatabase{
     }
 
     
-    public findAllOrders = async():Promise<OrderModel[]>=>{
+    public findAllOrders = async(providerId:string):Promise<OrderModel[]>=>{
         try{
             
             return await ConnectToDatabase.con(this.ORDER_TABLE)
+                .where({ provider: providerId })
 
         }catch(e:any){
             throw new Error(`Error fetching all orders: ${e.message || e}`)

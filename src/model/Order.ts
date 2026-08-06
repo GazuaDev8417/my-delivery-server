@@ -16,7 +16,8 @@ export default class Order extends ConnectToDatabase{
         private client:string,
         private state:string,
         private address:string,
-        private description:string
+        private description:string,
+        private provider:string
     ){ super() }
 
     save = async():Promise<void>=>{
@@ -32,7 +33,8 @@ export default class Order extends ConnectToDatabase{
                 client: this.client,
                 state: this.state,
                 address: this.address,
-                description: this.description
+                description: this.description,
+                provider: this.provider
             })
         }catch(e:any){
             throw new Error(`Failed to save order: ${e.message || e}`)
