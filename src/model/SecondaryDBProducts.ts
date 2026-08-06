@@ -3,7 +3,7 @@ import ConnectToDatabase from "../data/Connexion"
 
 
 export default class SecondaryDBProduct extends ConnectToDatabase{
-    protected SECONDARY_DB_PRODUCT = 'Product'
+    protected SECONDARY_DB_PRODUCT = 'product'
 
     constructor(
         private name:string,
@@ -14,19 +14,16 @@ export default class SecondaryDBProduct extends ConnectToDatabase{
         private status:string
     ){ super() }
 
-    save = async():Promise<void>=>{
+    save = async():Promise<void>=>{ 
         try{
-            console.log('Trying to execute')
             const result = await ConnectToDatabase.dbSecondary(this.SECONDARY_DB_PRODUCT).insert({
                 name: this.name,
                 description: this.description,
                 category: this.category,
                 price: this.price,
                 stock: this.stock,
-                status: this.status
+                status: this.stock >= 150 ? 'Active' : this.stock > 0 ? 'Low Stock' : 'Inactive'
             })
-
-            console.log('the result', result)
         }catch(e:any){
             throw new Error(`Failed to save product: ${e.message || e}`)
         }

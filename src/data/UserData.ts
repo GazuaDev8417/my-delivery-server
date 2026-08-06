@@ -38,25 +38,15 @@ export default class UserData extends ConnectToDatabase{
         }
     }
 
-    
-    public createSecondaryDBUser = async (user: User): Promise<void> => {
-        try {
-            await ConnectToDatabase.dbSecondary(this.CUSTOMER_TABLE).insert({
-                name: user.getUsername(),
-                email: user.getEmail(),
-                phone: user.getPhone(),
-                status: 'Active'
-            })
-        } catch (error: any) {
-            console.log('Error on secondary', error)
-            throw new Error(`Failed to create secondary database user: ${error.message || error}`)
-        }
-    }
 
-
-    public getAllUsers = async (): Promise<UserModel[]> => {
+    public getAllUsers = async (providerId:string): Promise<UserModel[]> => {
         try {
             const users = await ConnectToDatabase.con(this.USER_TABLE)
+                .select(
+                    "id", "username", "email", "street", "cep", "number",
+                    "neighbourhood", "city", "state", "complement", "phone", "provider"
+                ).where({ provider: providerId })
+
             return users
         } catch (error: any) {
             throw new Error(`Failed to fetch users: ${error.message || error}`)
@@ -97,18 +87,6 @@ export default class UserData extends ConnectToDatabase{
                 .where({ email })
 
             return user
-        } catch (error: any) {
-            throw new Error(`Failed to fetch user by email: ${error.message || error}`)
-        }
-    }
-
-
-    public findDbSecondaryByEmail = async (email: string): Promise<UserModel | undefined> => {
-        try {
-            const [dbSecondaryuser] = await ConnectToDatabase.dbSecondary(this.CUSTOMER_TABLE)
-                .where({ email })
-
-            return dbSecondaryuser
         } catch (error: any) {
             throw new Error(`Failed to fetch user by email: ${error.message || error}`)
         }
@@ -180,17 +158,6 @@ export default class UserData extends ConnectToDatabase{
             throw new Error(`Failed to update user profile: ${error.message || error}`)
         }
     }
-
-
-    public updateSecondaryDBUser = async (id: string, username: string, email: string, phone: string): Promise<void> => {
-        try {
-            await ConnectToDatabase.dbSecondary(this.CUSTOMER_TABLE)
-                .update({ name: username, email, phone })
-                .where({ id })
-        } catch (error: any) {
-            throw new Error(`Failed to update user profile from secondary database: ${error.message || error}`)
-        }
-    }
     
 
     public deleteUser = async (id: string): Promise<void> => {
@@ -220,17 +187,4 @@ export default class UserData extends ConnectToDatabase{
             throw new Error(`Failed to delete user and associated orders: ${error.message || error}`)
         }
     }
-
-
-    public deleteSecondaryDBUserByEmail = async (email: string): Promise<void> => {
-        const connection = ConnectToDatabase.con
-        const user = await this.findByEmail(email)
-
-        try {
-            await ConnectToDatabase.dbSecondary(this.CUSTOMER_TABLE).del().where({ email })
-        } catch (error: any) {
-            throw new Error(`Failed to delete secondary database user: ${error.message || error}`)
-        }
-    }
-
 }

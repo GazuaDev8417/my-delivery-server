@@ -19,11 +19,11 @@ export default class OrderData extends ConnectToDatabase{
     }
 
 
-    public findRequestedOrder = async(product:string, client:string):Promise<OrderModel | undefined>=>{
+    public findRequestedOrder = async(product:string, price:number, description:string, client:string):Promise<OrderModel | undefined>=>{
         try{
 
             const [order] = await ConnectToDatabase.con(this.ORDER_TABLE).where({
-                product, client, state: 'REQUESTED'
+                product, price, description, client, state: 'REQUESTED'
             })
             
             return order

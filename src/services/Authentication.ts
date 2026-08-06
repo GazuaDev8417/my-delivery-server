@@ -27,11 +27,11 @@ export class AppError extends Error{
 
 
 export default class Services{
-    private userdata:UserData
+    private userData:UserData
     private restaurantData:RestaurantData
 
     constructor(){
-        this.userdata = new UserData()
+        this.userData = new UserData()
         this.restaurantData = new RestaurantData()
     }
 
@@ -59,13 +59,15 @@ export default class Services{
     }
 
     public authenticateUser = async(req:Request):Promise<UserModel>=>{
-        const token = req.headers.authorization
-        if (!token) {
+        const authHeader = req.headers.authorization
+        if (!authHeader) {
             throw new AppError(401, "Authorization header is missing");
         }
 
-        const tokenData =  new Services().getTokenData(token)
-        const user = await new UserData().getProfile(tokenData.payload)
+
+        const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader
+        const tokenData =  this.getTokenData(token)
+        const user = await this.userData.getProfile(tokenData.payload)
 
         if(!user){
             throw new AppError(404, 'User not found')
@@ -75,15 +77,16 @@ export default class Services{
     }
 
     public authenticateRestaurant = async(req:Request):Promise<RestaurantModel>=>{
-        const token = req.headers.authorization
+        const authHeader = req.headers.authorization
         
-        if(!token){
+        if(!authHeader){
             throw new AppError(401, 'Authorization header is missing')
         }
-
-        const tokenData =  new Services().getTokenData(token)
-        const restaurant = await new RestaurantData().findRestaurantById(tokenData.payload)
         
+        
+        const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader
+        const tokenData =  this.getTokenData(token)
+        const restaurant = await this.restaurantData.findRestaurantById(tokenData.payload)
     
         if(!restaurant){
             throw new AppError(404, 'Restaurant not found')

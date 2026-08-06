@@ -192,45 +192,29 @@ export default class RestaurantBusiness{
     }
 
 // ====================== PRODUCTS =============================== 
-    public insertProduct = async (productDTO: CreateAndUpdateProductDTO): Promise<void> => {
+    public insertProduct = async (productDTO: CreateAndUpdateProductDTO, providerId:string): Promise<void> => {
         const { category, description, name, price, image, stock } = productDTO
-        const status = stock === 0 ? 'Inactive' : stock < 10 ? 'Low Stock' : 'Active'
+        const stockNumber = Number(stock)
+        const status = stockNumber >= 150 ? 'Active' : stockNumber > 0 ? 'Low Stock' : 'Inactive'
 
         if (!category || !description || !name || !price || !stock) {
             throw new AppError(400, "Please fill in all required product fields")
         }
 
+        if(Number(price) === 0){
+            throw new AppError(403, 'Please, the price is required')
+        }
+
         const existingProduct = await this.restaurantData.findProduct(name, category, description)
-        const existingSecondaryDBProduct = await this.restaurantData.findSecondaryDBProduct(name, category, description)
-
-        if (existingProduct && existingSecondaryDBProduct) {
-            throw new AppError(409, "This product is already registered in both databases")
-        }
-
-        if(existingProduct && !existingSecondaryDBProduct){
-            await this.restaurantData.deleteProductBySomeFields(name, category, description)
-        }
-
-        if(!existingProduct && existingSecondaryDBProduct){
-            await this.restaurantData.deleteSecProductBySomeFields(name, category, description)
-        }
-        
+        if (existingProduct) {
+            throw new AppError(403, "This product is already registered")
+        }        
 
         const id = this.services.idGenerator()
-        const product = new Product(category, description, id, name, price, image)
-        const secondaryProduct = new SecondaryDBProduct(name, description, category, price, stock, status)
+        const product = new Product(category, description, id, name, image, price, stock, providerId, status)
 
-        console.log('why')
+        
         await this.restaurantData.insertProduct(product)
-
-        try{
-            console.log('whats wrong')
-            await this.restaurantData.insertSecondaryDBProduct(secondaryProduct)
-        }catch(e){
-            console.log(e)
-            await this.restaurantData.deleteProductBySomeFields(name, category, description)
-            throw new AppError(500, 'Registration failed on secondary database')
-        }
     }
 
 
@@ -240,22 +224,31 @@ export default class RestaurantBusiness{
             throw new AppError(404, "Product not found")
         }
 
-        const { category, description, name, price, image } = updateDTO
+        const { category, description, name, price, image, stock } = updateDTO
 
         if (!category || !description || !name || !price) {
             throw new AppError(400, "Please fill in all required product fields")
         }
 
+        if(Number(price) === 0){
+            throw new AppError(403, 'Please, the price is required')
+        }
+
         const photoUrl = image ? image : existingProduct.photoUrl
+        const stockNumber = Number(stock)
+        const status = stockNumber >= 150 ? 'Active' : stockNumber > 0 ? 'Low Stock' : 'Inactive'
 
         await this.restaurantData.updateProduct(
-            productId,
             category,
             description,
+            productId,
             name,
+            photoUrl,
             price,
-            photoUrl
+            stock,
+            status
         )
+        
     }
 
 

@@ -45,6 +45,7 @@ export interface OrderModel{
     total:number
     moment:string 
     client:string
+    status: 'Pending' | 'Completed'
 }
 
 export interface cepModel{

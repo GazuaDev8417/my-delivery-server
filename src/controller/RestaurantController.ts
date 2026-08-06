@@ -117,10 +117,10 @@ export default class RestaurantController {
 
     public insertProduct = async (req: Request, res: Response): Promise<void> => {
         try {
-            await this.services.authenticateRestaurant(req);
+            const reataurant = await this.services.authenticateRestaurant(req);
             const createProductDTO: CreateAndUpdateProductDTO = req.body;
 
-            await this.restaurantBusiness.insertProduct(createProductDTO);
+            await this.restaurantBusiness.insertProduct(createProductDTO, reataurant.id);
 
             res.status(201).json({ message: "Product registered successfully!" });
         } catch (error: any) {
@@ -131,7 +131,7 @@ export default class RestaurantController {
     public updateProduct = async (req: Request, res: Response): Promise<void> => {
         try {
             await this.services.authenticateRestaurant(req);
-            const { id } = req.params;
+            const { id } = req.params 
             const updateDTO: CreateAndUpdateProductDTO = req.body
 
             await this.restaurantBusiness.updateProduct(id, updateDTO);
@@ -140,7 +140,7 @@ export default class RestaurantController {
         } catch (error: any) {
             this.handleError(res, error);
         }
-    };
+    }
 
     public getAllProducts = async (_req: Request, res: Response): Promise<void> => {
         try {

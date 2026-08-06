@@ -47,7 +47,7 @@ export default class OrderBusiness{
         const localMoment = moment.utc(momentString).tz("America/Sao_Paulo").format('DD/MM/YYYY [at] HH:mm')
         const id = this.services.idGenerator()
 
-        const existingOrder = await this.orderData.findRequestedOrder(product, user.id)
+        const existingOrder = await this.orderData.findRequestedOrder(product, price, description, user.id)
         if(existingOrder){
             throw new AppError(403, `You already have an active order for '${product}'. Would you like to view it?`)
         }
@@ -135,7 +135,7 @@ export default class OrderBusiness{
     }
 
 
-    private removeExpiredOrders = async(orders:OrderModel[]):Promise<void>=>{
+    /* private removeExpiredOrders = async(orders:OrderModel[]):Promise<void>=>{
         const startOfToday = moment().tz('America/Sao_Paulo').startOf('day')
 
         for(const order of orders){
@@ -149,7 +149,7 @@ export default class OrderBusiness{
                 await this.orderData.deleteOrder(order.id)
             }
         }
-    }
+    } */
 
     
     public getActiveOrders = async(userId:string):Promise<OrderModel[]>=>{
@@ -157,14 +157,14 @@ export default class OrderBusiness{
         if(orders.length === 0){
             throw new AppError(404, "You haven't placed any active orders yet")
         }
-        await this.removeExpiredOrders(orders)
+        //await this.removeExpiredOrders(orders)
         return orders
     }
 
 
     public getAllOrders = async():Promise<OrderModel[]>=>{
         const orders = await this.orderData.findAllOrders()
-        await this.removeExpiredOrders(orders)
+        //await this.removeExpiredOrders(orders)
         
         if(orders.length === 0){
             throw new AppError(404, 'Order list is empty')
@@ -188,7 +188,7 @@ export default class OrderBusiness{
         if(orders.length === 0){
             throw new AppError(404, 'No finished orders found in your history')
         }
-        await this.removeExpiredOrders(orders)
+        //await this.removeExpiredOrders(orders)
         return orders
     } 
     

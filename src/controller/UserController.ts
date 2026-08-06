@@ -49,6 +49,18 @@ export default class UserController {
         }
     };
 
+    public getAllUsers = async (req: Request, res: Response): Promise<void> => {
+        try {
+
+            const restaurant = await this.services.authenticateRestaurant(req);
+            const users = await this.userBusiness.getAllUsers(restaurant.id)
+
+            res.status(200).json(users);
+        } catch (error: any) {
+            this.handleError(res, error);
+        }
+    };
+
     public getProfile = async (req: Request, res: Response): Promise<void> => {
         try {
             const authenticatedUser = await this.services.authenticateUser(req);

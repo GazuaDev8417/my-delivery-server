@@ -22,6 +22,7 @@ userRouter.post("/login", userController.login);
 userRouter.post("/password/reset-request", userController.requestPasswordReset);
 
 // Profile & Account routes
+userRouter.get("/", userController.getAllUsers);
 userRouter.get("/profile", userController.getProfile);
 userRouter.get("/profile/:id", userController.getProfileByUser);
 userRouter.put("/profile", userController.updateUser);

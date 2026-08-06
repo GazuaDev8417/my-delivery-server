@@ -68,33 +68,12 @@ export default class UserBusiness{
         }
 
         const registeredUser = await this.userData.findByEmail(email)
-        const registeredDbSecondaryUser = await this.userData.findDbSecondaryByEmail(email)
-
-        if (registeredUser && registeredDbSecondaryUser) {
-            throw new AppError(409, "You have already been registered")
-        }
-
-        if(registeredUser && !registeredDbSecondaryUser){
-            await this.userData.deleteUserByEmail(email)
-        }
-
-        if(!registeredUser && registeredDbSecondaryUser){
-            await this.userData.deleteSecondaryDBUserByEmail(email)
-        }
-
         const id = this.services.idGenerator()
         const hashedPassword = this.services.hashPassword(password)
         const token = this.tokenService.generateToken(id)
         const user = new User(id, name, email, phone, hashedPassword)
 
         await this.userData.createUser(user)
-        
-        try{
-            await this.userData.createSecondaryDBUser(user)
-        }catch(e){
-            await this.userData.deleteUserByEmail(email)
-            throw new AppError(500, 'Registration failed on secondary database')
-        }
 
         return token
     }
@@ -135,6 +114,17 @@ export default class UserBusiness{
         }
 
         return profile
+    }
+
+
+    public getAllUsers = async (providerId:string): Promise<UserModel[]> => {
+        const users = await this.userData.getAllUsers(providerId)
+
+        if (users.length === 0) {
+            throw new AppError(404, "Users profile not found")
+        }
+
+        return users
     }
 
 
@@ -198,13 +188,12 @@ export default class UserBusiness{
             throw new AppError(400, "Please fill in all required profile fields")
         }
 
-        const secondaryDBUser = await this.userData.findDbSecondaryByEmail(email)
-        if(!secondaryDBUser){
-            throw new AppError(404, 'User from secondary database not found')
+        const existingUser = await this.userData.findById(userId)
+        if(!existingUser){
+            throw new AppError(404, 'User not found')
         }
         
         await this.userData.updateUser(userId, username, email, phone)
-        await this.userData.updateSecondaryDBUser(secondaryDBUser.id, username, email, phone)
     }
 
 
