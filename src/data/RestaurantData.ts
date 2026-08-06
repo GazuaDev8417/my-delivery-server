@@ -2,7 +2,6 @@ import ConnectToDatabase from "./Connexion"
 import { v4 as uuidv4 } from 'uuid'
 import Restaurant from "../model/Restaurant"
 import Product from "../model/Products"
-import SecondayDBProduct from "../model/SecondaryDBProducts"
 import { ProductModel, RestaurantModel } from "../model/typesAndInterfaces"
 
 

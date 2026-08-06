@@ -5,7 +5,6 @@ import Services, { AppError } from "../services/Authentication"
 import EmailService from "../services/EmailService"
 import TokenService from "../services/TokenService"
 import { ProductModel, RestaurantModel } from "../model/typesAndInterfaces"
-import SecondaryDBProduct from "../model/SecondaryDBProducts"
 
 
 
