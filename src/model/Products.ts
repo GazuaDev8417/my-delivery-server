@@ -13,8 +13,7 @@ export default class Product extends ConnectToDatabase{
         private photoUrl:string,
         private price:number,
         private stock:number,
-        private provider:string,
-        private status:string
+        private provider:string
     ){ super() }
 
     save = async():Promise<void>=>{
@@ -27,8 +26,7 @@ export default class Product extends ConnectToDatabase{
                 photoUrl: this.photoUrl,
                 price: this.price,
                 stock: this.stock,
-                provider: this.provider,
-                status: this.status
+                provider: this.provider
             })
         }catch(e:any){
             throw new Error(`Failed to save product: ${e.message || e}`)

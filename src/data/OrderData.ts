@@ -6,6 +6,7 @@ import { OrderModel } from "../model/typesAndInterfaces"
 
 export default class OrderData extends ConnectToDatabase{
     protected ORDER_TABLE = 'orders'
+    protected USER_TABLE = 'users'
 
     
     public createOrder = async(order:Orders):Promise<void>=>{
@@ -50,6 +51,38 @@ export default class OrderData extends ConnectToDatabase{
             
             return await ConnectToDatabase.con(this.ORDER_TABLE)
                 .where({ provider: providerId })
+
+        }catch(e:any){
+            throw new Error(`Error fetching all orders: ${e.message || e}`)
+        }
+    }
+
+
+    public findRecentOrders = async(providerId:string):Promise<OrderModel[]>=>{
+        try{
+
+            const now = new Date()
+            const year = now.getFullYear()
+            const month = now.getMonth()
+
+            const startOfLastMonth = new Date(year, month - 1, 1)
+            const endOfCurrentMonth = new Date(year, month + 1, 0, 23, 59, 59)
+
+            const startTimestamp = startOfLastMonth.getTime()
+            const endTimestamp = endOfCurrentMonth.getTime()
+
+            
+            return await ConnectToDatabase.con(this.ORDER_TABLE)
+                .join(this.USER_TABLE, `${this.USER_TABLE}.id`, `${this.ORDER_TABLE}.client`)
+                .where(`${this.ORDER_TABLE}.provider`, providerId)
+                .whereBetween(`${this.ORDER_TABLE}.moment`, [startOfLastMonth, endOfCurrentMonth])
+                .select(
+                    `${this.ORDER_TABLE}.id`,
+                    `${this.USER_TABLE}.username`,
+                    `${this.ORDER_TABLE}.product`,
+                    `${this.ORDER_TABLE}.total`,
+                    `${this.ORDER_TABLE}.state`
+                ).distinct()
 
         }catch(e:any){
             throw new Error(`Error fetching all orders: ${e.message || e}`)

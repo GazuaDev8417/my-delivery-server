@@ -14,4 +14,5 @@ const statisticController = new StatisticController(statisticsBusiness)
 
 /* ROUTES */
 statisticsRouter.get('/revenue', statisticController.getStatistics)
+statisticsRouter.get('/revenue-month', statisticController.getMonthlyStatistics)
 

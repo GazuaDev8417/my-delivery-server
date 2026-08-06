@@ -7,8 +7,7 @@ import RestaurantBusiness, {
     RequestPasswordResetDTO,
     ConfirmPasswordResetDTO
 } from "../business/RestaurantBusiness";
-import Services, { AppError } from "../services/Authentication";
-import type { ProductModel } from "../model/typesAndInterfaces";
+import Services, { AppError } from "../services/Authentication"
 
 
 
@@ -36,10 +35,7 @@ export default class RestaurantController {
             const signupDTO: SignupRestaurantDTO = req.body;
             const token = await this.restaurantBusiness.signupRestaurant(signupDTO);
 
-            res.status(201).json({
-                message: "Restaurant registered successfully",
-                token
-            });
+            res.status(201).json(token);
         } catch (error: any) {
             this.handleError(res, error);
         }

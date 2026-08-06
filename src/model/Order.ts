@@ -12,7 +12,7 @@ export default class Order extends ConnectToDatabase{
         private photoUrl:string,
         private quantity:number,
         private total:number,
-        private moment:string,
+        private moment:Date,
         private client:string,
         private state:string,
         private address:string,

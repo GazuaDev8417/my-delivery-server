@@ -38,16 +38,14 @@ export default class OrderBusiness{
     ){}
 
     public createOrder = async(user:UserModel, orderDataDTO:CreateOrderDTO):Promise<void>=>{
-        const { product, price, quantity, momentString, photoUrl, description, providerId } = orderDataDTO
+        const { product, price, quantity, photoUrl, description, providerId } = orderDataDTO
 
         if (!product || !price || !quantity) {
             throw new AppError(400, "Missing required order fields");
         }
         
         const address = `${user.street} ${user.number}, ${user.neighbourhood} ${user.city} - ${user.state}`
-        const localMoment = moment.utc(momentString).tz("America/Sao_Paulo").format('DD/MM/YYYY [at] HH:mm')
         const id = this.services.idGenerator()
-
         const existingOrder = await this.orderData.findRequestedOrder(product, price, description, user.id)
         if(existingOrder){
             throw new AppError(403, `You already have an active order for '${product}'. Would you like to view it?`)
@@ -60,7 +58,7 @@ export default class OrderBusiness{
             photoUrl, 
             quantity,
             quantity * price,
-            localMoment,
+            new Date(),
             user.id,
             'REQUESTED',
             address,
@@ -173,6 +171,18 @@ export default class OrderBusiness{
         } 
 
         return orders
+    }
+
+
+    public getRecentOrders = async(providerId:string):Promise<OrderModel[]>=>{
+        const recentOrders = await this.orderData.findRecentOrders(providerId)
+        //await this.removeExpiredOrders(orders)
+        
+        if(recentOrders.length === 0){
+            throw new AppError(404, 'Order list is empty')
+        } 
+
+        return recentOrders
     }
 
 

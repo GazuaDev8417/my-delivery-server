@@ -17,6 +17,7 @@ orderRouter.post("/", orderController.createOrder);
 orderRouter.get("/active", orderController.getActiveOrders);
 orderRouter.get("/history", orderController.getFinishedOrders);
 orderRouter.get("/all", orderController.getAllOrders);
+orderRouter.get("/recent", orderController.getRecentOrders);
 orderRouter.get("/user/:id", orderController.getActiveOrdersByUserId);
 orderRouter.get("/:id", orderController.getOrderById);
 

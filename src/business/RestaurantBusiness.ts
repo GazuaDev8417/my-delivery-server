@@ -15,7 +15,7 @@ export interface SignupRestaurantDTO{
     email:string
     logourl:string
     password:string
-    category:string
+    description:string
 }
 
 export interface UpdateRestaurantDTO{
@@ -64,9 +64,9 @@ export default class RestaurantBusiness{
 
     
     public signupRestaurant = async(signupDTO:SignupRestaurantDTO):Promise<string>=>{
-        const { name, address , phone, email, logourl, password, category } = signupDTO
+        const { name, address , phone, email, logourl, password, description } = signupDTO
 
-        if (!name || !address || !phone || !email || !password || !category) {
+        if (!name || !address || !phone || !email || !password || !description) {
             throw new AppError(400, "Missing required registration fields")
         }
 
@@ -83,7 +83,7 @@ export default class RestaurantBusiness{
         const restaurant = new Restaurant(
             address, 
             phone,
-            category, 
+            description, 
             id, 
             logourl, 
             name,
@@ -210,7 +210,7 @@ export default class RestaurantBusiness{
         }        
 
         const id = this.services.idGenerator()
-        const product = new Product(category, description, id, name, image, price, stock, providerId, status)
+        const product = new Product(category, description, id, name, image, price, stock, providerId)
 
         
         await this.restaurantData.insertProduct(product)

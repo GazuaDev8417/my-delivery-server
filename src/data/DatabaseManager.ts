@@ -71,7 +71,7 @@ export default class DatabaseManager extends ConnectToDatabase{
                 await this.con.schema.createTable(this.RESTAURANT_TABLE, (table)=>{
                     table.string('address', 150).notNullable()
                     table.string('phone', 15).notNullable()
-                    table.string('category', 30).notNullable()
+                    table.string('description', 100).notNullable()
                     table.string('id', 36).primary().notNullable()
                     table.string('logourl', 255)
                     table.string('name', 30).notNullable()
@@ -101,6 +101,7 @@ export default class DatabaseManager extends ConnectToDatabase{
                     table.string('photoUrl', 255)
                     table.decimal('price', 10, 2).notNullable()
                     table.integer('stock').notNullable()
+                    table.string('provider', 255).notNullable()
                 })
 
                 console.log(`${this.PRODUCT_TABLE} table was created successfully`)
@@ -124,12 +125,13 @@ export default class DatabaseManager extends ConnectToDatabase{
                     table.string('photoUrl', 255)
                     table.integer('quantity').notNullable()
                     table.decimal('total', 10, 2).notNullable()
-                    table.string('moment', 150).notNullable()
+                    table.timestamp('moment').notNullable()
                     table.string('client', 255).notNullable()
                     table.string('state', 50).notNullable()
                     table.string('address', 255).notNullable()
                     table.text('description').notNullable()
                     table.string('payment', 10)
+                    table.string('provider', 255).notNullable()
                 })
 
                 console.log(`${this.ORDER_TABLE} table was created successfully`)

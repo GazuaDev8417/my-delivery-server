@@ -156,7 +156,18 @@ export default class OrderController {
         } catch (error: any) {
             this.handleError(res, error);
         }
-    };
+    }
+
+    public getRecentOrders = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const restaurant = await this.services.authenticateRestaurant(req);
+            const recentOrders = await this.orderBusiness.getRecentOrders(restaurant.id);
+
+            res.status(200).json(recentOrders);
+        } catch (error: any) {
+            this.handleError(res, error);
+        }
+    }
 
     public getActiveOrdersByUserId = async (req: Request, res: Response): Promise<void> => {
         try {
