@@ -23,8 +23,8 @@ export default class StatisticController{
 /* ENDPOINTS */
     public getStatistics = async(req:Request, res:Response):Promise<void>=>{
         try {
-            await new Services().authenticateRestaurant(req)
-            const result = await this.statisticBusiness.getStatistics()
+            const restaurant = await new Services().authenticateRestaurant(req)
+            const result = await this.statisticBusiness.getStatistics(restaurant.id)
 
             res.status(200).json(result);
         } catch (error: any) {

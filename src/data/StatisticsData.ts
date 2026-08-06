@@ -12,7 +12,7 @@ export default class StatisticsData extends ConnectToDatabase{
     protected PRODUCT_TABLE = 'products'
 
 
-    public getStatisticsPanel = async():Promise<Statistics[]>=>{
+    public getStatisticsPanel = async(providerId:string):Promise<Statistics[]>=>{
         try{
             const [
                 [{ count: totalCustomers }],
@@ -20,11 +20,12 @@ export default class StatisticsData extends ConnectToDatabase{
                 [{ count: totalProducts }],
                 [{ sum: totalRevenue }]
             ] = await Promise.all([
-                ConnectToDatabase.con(this.USER_TABLE).count('id as count'),
-                ConnectToDatabase.con(this.ORDER_TABLE).count('id as count'),
-                ConnectToDatabase.con(this.PRODUCT_TABLE).count('id as count'),
-                ConnectToDatabase.con(this.ORDER_TABLE).sum('total as sum')
+                ConnectToDatabase.con(this.ORDER_TABLE).where('provider', providerId).countDistinct('client as count'),
+                ConnectToDatabase.con(this.ORDER_TABLE).where('provider', providerId).count('id as count'),
+                ConnectToDatabase.con(this.PRODUCT_TABLE).where('provider', providerId).count('id as count'),
+                ConnectToDatabase.con(this.ORDER_TABLE).where('provider', providerId).sum('total as sum')
             ])
+            //specify from what provider this revenue comes
             return [
                 {title: 'Revenue', value: totalRevenue || 0},
                 {title: 'Customer', value: totalCustomers},

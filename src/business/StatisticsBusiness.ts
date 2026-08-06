@@ -9,8 +9,8 @@ export default class StatisticBusiness{
     ){}
 
 
-    public getStatistics = async():Promise<Statistics[]>=>{
-        const restStatistics = await this.statisticsData.getStatisticsPanel()
+    public getStatistics = async(providerId:string):Promise<Statistics[]>=>{
+        const restStatistics = await this.statisticsData.getStatisticsPanel(providerId)
         
         if(restStatistics.length === 0){
             throw new AppError(401, 'There is no data to fetch statistics')

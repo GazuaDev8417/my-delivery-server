@@ -41,11 +41,16 @@ export default class UserData extends ConnectToDatabase{
 
     public getAllUsers = async (providerId:string): Promise<UserModel[]> => {
         try {
+
             const users = await ConnectToDatabase.con(this.USER_TABLE)
+                .join(this.ORDER_TABLE, `${this.USER_TABLE}.id`, `${this.ORDER_TABLE}.client`)
+                .where(`${this.ORDER_TABLE}.provider`, providerId)
                 .select(
-                    "id", "username", "email", "street", "cep", "number",
-                    "neighbourhood", "city", "state", "complement", "phone", "provider"
-                ).where({ provider: providerId })
+                    `${this.USER_TABLE}.id`,
+                    `${this.USER_TABLE}.username`,
+                    `${this.USER_TABLE}.email`,
+                    `${this.USER_TABLE}.phone`
+                ).distinct()
 
             return users
         } catch (error: any) {
