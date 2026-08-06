@@ -146,7 +146,17 @@ export default class RestaurantController {
         } catch (error: any) {
             this.handleError(res, error);
         }
-    };
+    }
+
+    public aAllProductsByClientSide = async (_req: Request, res: Response): Promise<void> => {
+        try {
+            const productsByClientSide = await this.restaurantBusiness.aAllProductsByClientSide();
+
+            res.status(200).json(productsByClientSide);
+        } catch (error: any) {
+            this.handleError(res, error);
+        }
+    }
 
     public getProductById = async (req: Request, res: Response): Promise<void> => {
         try {

@@ -27,6 +27,7 @@ restaurantRouter.get("/", restaurantController.getRestaurant);
 
 // Products routes
 restaurantRouter.get("/products", restaurantController.getAllProducts);
+restaurantRouter.get("/clientside-products", restaurantController.aAllProductsByClientSide);
 restaurantRouter.get("/product/:id", restaurantController.getProductById);
 restaurantRouter.post("/product", uploadLocal.single('image') /* upload.single('image'), uploadToCloudinary */, restaurantController.insertProduct);
 restaurantRouter.put("/product/:id", uploadLocal.single('image') /* upload.single('image'), uploadToCloudinary */, restaurantController.updateProduct);

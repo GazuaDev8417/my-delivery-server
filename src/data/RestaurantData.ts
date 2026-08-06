@@ -177,6 +177,19 @@ export default class RestaurantData extends ConnectToDatabase{
     }
 
 
+    public allProductsByClientSide = async():Promise<ProductModel[]>=>{
+        try{
+
+            const productsByClientSide = await ConnectToDatabase.con(this.PRODUCT_TABLE)
+                .where('stock', '>', 0)
+            
+            return productsByClientSide
+        }catch(e:any){
+            throw new Error(`Error fetching menu products: ${e.message || e}`)
+        }
+    }
+
+
     public findProductById = async(id:string):Promise<ProductModel | undefined>=>{
         try{
 

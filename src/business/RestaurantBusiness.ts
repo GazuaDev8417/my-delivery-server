@@ -201,7 +201,11 @@ export default class RestaurantBusiness{
         }
 
         if(Number(price) === 0){
-            throw new AppError(403, 'Please, the price is required')
+            throw new AppError(403, 'You have to define a price')
+        }
+
+        if(Number(stock) === 0){
+            throw new AppError(403, 'You can not add a product with no stock')
         }
 
         const existingProduct = await this.restaurantData.findProduct(name, category, description)
@@ -210,7 +214,7 @@ export default class RestaurantBusiness{
         }        
 
         const id = this.services.idGenerator()
-        const product = new Product(category, description, id, name, image, price, stock, providerId)
+        const product = new Product(category, description, id, name, image, price, stock, providerId, status)
 
         
         await this.restaurantData.insertProduct(product)
@@ -230,7 +234,7 @@ export default class RestaurantBusiness{
         }
 
         if(Number(price) === 0){
-            throw new AppError(403, 'Please, the price is required')
+            throw new AppError(403, 'You have to define a price')
         }
 
         const photoUrl = image ? image : existingProduct.photoUrl
@@ -258,6 +262,16 @@ export default class RestaurantBusiness{
         }
 
         return products
+    }
+
+
+    public aAllProductsByClientSide = async (): Promise<ProductModel[]> => {
+        const productsByClientSide = await this.restaurantData.allProductsByClientSide()
+        if (productsByClientSide.length === 0) {
+            throw new AppError(404, "Menu is empty")
+        }
+
+        return productsByClientSide
     }
 
 
