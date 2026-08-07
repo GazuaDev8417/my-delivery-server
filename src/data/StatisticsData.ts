@@ -92,4 +92,55 @@ export default class StatisticsData extends ConnectToDatabase{
             throw new Error(`Failed to get monthly statistics: ${e.message || e}`)
         }
     }
+
+
+    public statisticsPanelForAnalizes = async(providerId:string):Promise<Statistics[]>=>{
+        try{
+            const now = new Date()
+            const startCurrrentMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+            const startPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+            const endPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
+
+            const [
+                [{ count: totalCustomers }],
+                [{ count: totalOrder }],
+                [{ sum: totalRevenue }],
+                [{ count: currentMonthOrders }],
+                [{ count: previousMonthOrders }]
+            ] = await Promise.all([
+                ConnectToDatabase.con(this.ORDER_TABLE).where('provider', providerId).countDistinct('client as count'),
+                ConnectToDatabase.con(this.ORDER_TABLE).where('provider', providerId).count('id as count'),
+                ConnectToDatabase.con(this.ORDER_TABLE).where('provider', providerId).sum('total as sum'),
+                
+                ConnectToDatabase.con(this.ORDER_TABLE)
+                    .where('provider', providerId)
+                    .where('moment', '>', startCurrrentMonth)
+                    .count('id as count'),
+                
+                ConnectToDatabase.con(this.ORDER_TABLE)
+                    .where('provider', providerId)
+                    .whereBetween('moment', [startPreviousMonth, endPreviousMonth])
+                    .count('id as count')
+            ])
+
+            const prevCount = Number(previousMonthOrders) || 0
+            const currCount = Number(currentMonthOrders) || 0
+            let growthPercentage = 0
+
+            if(prevCount === 0){
+                growthPercentage = currCount > 0 ? 100 : 0
+            }else{
+                growthPercentage = Number((((currCount - prevCount) / prevCount) * 100).toFixed(2))
+            }
+
+            return [
+                { title: 'Revenue', value: totalRevenue || '0.00' },
+                { title: 'Custmoer', value: totalCustomers || 0 },
+                { title: 'Orders', value: totalOrder || 0 },
+                { title: 'Growth', value: `${growthPercentage}%` }
+            ]
+        }catch(e:any){
+            throw new Error(`Failed to growth percentage of statistics: ${e}`)
+        }
+    }
 }

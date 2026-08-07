@@ -2,7 +2,7 @@ import Order from "../model/Order"
 import OrderData from "../data/OrderData"
 import Services, { AppError } from "../services/Authentication"
 import moment from "moment-timezone"
-import { OrderModel, UserModel, RestaurantModel } from "../model/typesAndInterfaces"
+import { OrderModel, UserModel, OrdersByMonthModel } from "../model/typesAndInterfaces"
 import axios from "axios"
 import { config } from "dotenv"
 import { v4 as uuidv4 } from "uuid"
@@ -183,6 +183,18 @@ export default class OrderBusiness{
         } 
 
         return recentOrders
+    }
+
+
+    public ordersByMonth = async(providerId:string):Promise<OrdersByMonthModel[]>=>{
+        const findOrdersByMonth = await this.orderData.findOrdersByMonth(providerId)
+        //await this.removeExpiredOrders(orders)
+        
+        if(findOrdersByMonth.length === 0){
+            throw new AppError(404, 'Order list is empty')
+        } 
+
+        return findOrdersByMonth
     }
 
 

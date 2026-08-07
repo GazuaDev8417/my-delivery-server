@@ -10,7 +10,6 @@ export default class RestaurantData extends ConnectToDatabase{
     protected RESTAURANT_TABLE = 'restaurants'
     protected PRODUCT_TABLE = 'products'
     protected RESET_PASSWORD_TABLE = 'reset_password'
-    protected SECONDARY_DB_PRODUCT = 'product'
 
 
     public createRestaurant = async (restaurant: Restaurant): Promise<void> => {

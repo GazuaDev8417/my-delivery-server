@@ -132,7 +132,7 @@ export default class UserController {
         } catch (error: any) {
             this.handleError(res, error);
         }
-    };
+    }
 
     public deleteUser = async (req: Request, res: Response): Promise<void> => {
         try {

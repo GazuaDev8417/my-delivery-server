@@ -43,4 +43,16 @@ export default class StatisticController{
             this.handleError(res, error);
         }
     }
+
+
+    public statisticsPanelForAnalizes = async(req:Request, res:Response):Promise<void>=>{
+        try {
+            const restaurant = await new Services().authenticateRestaurant(req)
+            const result = await this.statisticBusiness.statisticsPanelForAnalizes(restaurant.id)
+
+            res.status(200).json(result);
+        } catch (error: any) {
+            this.handleError(res, error);
+        }
+    }
 }

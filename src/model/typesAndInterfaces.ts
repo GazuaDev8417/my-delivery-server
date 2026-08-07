@@ -48,6 +48,11 @@ export interface OrderModel{
     state: 'REQUESTED' | 'FINISHED'
 }
 
+export interface OrdersByMonthModel {
+    month: string;
+    orders: number;
+}
+
 export interface cepModel{
     cep:string 
     logradouro:string

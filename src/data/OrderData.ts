@@ -1,6 +1,6 @@
 import ConnectToDatabase from "./Connexion"
 import Orders from "../model/Order"
-import { OrderModel } from "../model/typesAndInterfaces"
+import { OrderModel, OrdersByMonthModel } from "../model/typesAndInterfaces"
 
 
 
@@ -83,6 +83,34 @@ export default class OrderData extends ConnectToDatabase{
 
         }catch(e:any){
             throw new Error(`Error fetching all orders: ${e.message || e}`)
+        }
+    }
+
+
+    public findOrdersByMonth = async(providerId:string):Promise<OrdersByMonthModel[]>=>{
+        try{
+            const allOrders = await this.findAllOrders(providerId)
+            const monthCounts: { [key:string]:number } = {}
+
+            for(const order of allOrders){
+                const date = new Date(order.moment)
+                const year = date.getUTCFullYear()
+                const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+                const key = `${year}-${month}`
+
+                monthCounts[key] = (monthCounts[key] || 0) + 1
+            }
+
+            const result:OrdersByMonthModel[] = Object.keys(monthCounts).map((key)=>({
+                month: key,
+                orders: monthCounts[key]
+            }))
+
+            result.sort((a, b) => b.month.localeCompare(a.month))
+
+            return result
+        }catch(e:any){
+            throw new Error(`Error fetching orders by month: ${e.message || e}`)
         }
     }
 

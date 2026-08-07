@@ -30,4 +30,15 @@ export default class StatisticBusiness{
 
         return revenueByMonth
     }
+
+
+    public statisticsPanelForAnalizes = async(providerId:string):Promise<Statistics[]>=>{
+        const growthPercentage = await this.statisticsData.statisticsPanelForAnalizes(providerId)
+        
+        if(growthPercentage.length === 0){
+            throw new AppError(401, 'There is no data to fetch growth percentage of statistics ')
+        }
+
+        return growthPercentage
+    }
 }
