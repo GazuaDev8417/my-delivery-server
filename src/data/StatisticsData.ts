@@ -54,25 +54,22 @@ export default class StatisticsData extends ConnectToDatabase{
             const monthlyMap: { [key:string] : { revenue:number, orders:number } } = {}
             
             for(const order of orders){
-                const momentStr = order.moment
-                if(!momentStr) continue
+                const momentValue = order.moment
+                if(!momentValue) continue
 
-                const datePart = momentStr.split(' at ')[0]
-                const parts = datePart.split('/')
+                const date = new Date(momentValue)
+                if(isNaN(date.getTime())) continue
 
-                if(parts.length === 3){
-                    const day = parts[0]
-                    const month = parts[1]
-                    const year = parts[2]
-                    const key = `${year}-${month}`
-
-                    if(!monthlyMap[key]){
-                        monthlyMap[key] = { revenue: 0, orders: 0 }
-                    }
-
-                    monthlyMap[key].revenue += Number(order.total) || 0
-                    monthlyMap[key].orders += 1
+                const year = date.getUTCFullYear()
+                const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+                const key = `${year}-${month}`    
+                
+                if(!monthlyMap[key]){
+                    monthlyMap[key] = { revenue: 0, orders: 0 }
                 }
+
+                monthlyMap[key].revenue += Number(order.total) || 0
+                monthlyMap[key].orders += 1
             } 
 
             const result:MonthlyStatistic[] = Object.keys(monthlyMap).map(key=>{

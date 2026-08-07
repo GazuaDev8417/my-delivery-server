@@ -67,10 +67,7 @@ export default class OrderData extends ConnectToDatabase{
 
             const startOfLastMonth = new Date(year, month - 1, 1)
             const endOfCurrentMonth = new Date(year, month + 1, 0, 23, 59, 59)
-
-            const startTimestamp = startOfLastMonth.getTime()
-            const endTimestamp = endOfCurrentMonth.getTime()
-
+            
             
             return await ConnectToDatabase.con(this.ORDER_TABLE)
                 .join(this.USER_TABLE, `${this.USER_TABLE}.id`, `${this.ORDER_TABLE}.client`)
