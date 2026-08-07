@@ -26,7 +26,7 @@ export default class RestaurantData extends ConnectToDatabase{
         try{
 
             const [restaurant] = await ConnectToDatabase.con(this.RESTAURANT_TABLE).select(
-                'address', 'phone', 'category', 'id', 'logourl', 'name', 'email'
+                'address', 'phone', 'description', 'id', 'logourl', 'name', 'email'
             )
 
             return restaurant
@@ -165,10 +165,11 @@ export default class RestaurantData extends ConnectToDatabase{
     }
 
 
-    public findAllProducts = async():Promise<ProductModel[]>=>{
+    public findAllProducts = async(providerId:string):Promise<ProductModel[]>=>{
         try{
 
             const products = await ConnectToDatabase.con(this.PRODUCT_TABLE)
+                .where({ provider: providerId})
             
             return products
         }catch(e:any){
@@ -177,11 +178,12 @@ export default class RestaurantData extends ConnectToDatabase{
     }
 
 
-    public allProductsByClientSide = async():Promise<ProductModel[]>=>{
+    public allProductsByClientSide = async(providerId:string):Promise<ProductModel[]>=>{
         try{
 
             const productsByClientSide = await ConnectToDatabase.con(this.PRODUCT_TABLE)
                 .where('stock', '>', 0)
+                .andWhere({ provider: providerId })
             
             return productsByClientSide
         }catch(e:any){

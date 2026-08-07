@@ -138,9 +138,11 @@ export default class RestaurantController {
         }
     }
 
-    public getAllProducts = async (_req: Request, res: Response): Promise<void> => {
+    public getAllProducts = async (req: Request, res: Response): Promise<void> => {
+        
         try {
-            const products = await this.restaurantBusiness.getAllProducts();
+            const restaurant = await this.services.authenticateRestaurant(req)
+            const products = await this.restaurantBusiness.getAllProducts(restaurant.id);
 
             res.status(200).json(products);
         } catch (error: any) {
@@ -148,9 +150,10 @@ export default class RestaurantController {
         }
     }
 
-    public aAllProductsByClientSide = async (_req: Request, res: Response): Promise<void> => {
+    public aAllProductsByClientSide = async (req: Request, res: Response): Promise<void> => {
         try {
-            const productsByClientSide = await this.restaurantBusiness.aAllProductsByClientSide();
+            const { id } = req.params
+            const productsByClientSide = await this.restaurantBusiness.aAllProductsByClientSide(id);
 
             res.status(200).json(productsByClientSide);
         } catch (error: any) {

@@ -255,8 +255,8 @@ export default class RestaurantBusiness{
     }
 
 
-    public getAllProducts = async (): Promise<ProductModel[]> => {
-        const products = await this.restaurantData.findAllProducts()
+    public getAllProducts = async (providerId:string): Promise<ProductModel[]> => {
+        const products = await this.restaurantData.findAllProducts(providerId)
         if (products.length === 0) {
             throw new AppError(404, "Menu is empty")
         }
@@ -265,8 +265,8 @@ export default class RestaurantBusiness{
     }
 
 
-    public aAllProductsByClientSide = async (): Promise<ProductModel[]> => {
-        const productsByClientSide = await this.restaurantData.allProductsByClientSide()
+    public aAllProductsByClientSide = async (providerId:string): Promise<ProductModel[]> => {
+        const productsByClientSide = await this.restaurantData.allProductsByClientSide(providerId)
         if (productsByClientSide.length === 0) {
             throw new AppError(404, "Menu is empty")
         }

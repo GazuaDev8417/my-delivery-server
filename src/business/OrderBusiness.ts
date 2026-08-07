@@ -186,8 +186,8 @@ export default class OrderBusiness{
     }
 
 
-    public getActiveOrdersByUserId = async(userId:string):Promise<OrderModel[]>=>{
-        const orders = await this.orderData.findAllOrdersByClient(userId)
+    public getActiveOrdersByUserId = async(userId:string, providerId:string):Promise<OrderModel[]>=>{
+        const orders = await this.orderData.findAllOrdersByClient(userId, providerId)
         if(orders.length === 0){
             throw new AppError(404, 'No active orders found for this user')
         }

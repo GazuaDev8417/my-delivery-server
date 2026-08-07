@@ -102,11 +102,12 @@ export default class OrderData extends ConnectToDatabase{
     }
 
 
-    public findAllOrdersByClient = async(client:string):Promise<OrderModel[]>=>{
+    public findAllOrdersByClient = async(client:string, providerId:string):Promise<OrderModel[]>=>{
         try{
             
             return await ConnectToDatabase.con(this.ORDER_TABLE)
                 .where({ client })
+                .andWhere({ provider: providerId })
         }catch(e:any){
             throw new Error(`Error fetching client orders: ${e.message || e}`)
         }
