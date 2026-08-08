@@ -81,7 +81,12 @@ export default class OrderBusiness{
 
    
     public deleteOrder = async (orderId: string): Promise<void> => {
-        await this.orderData.deleteOrder(orderId);
+        const order = await this.orderData.findOrderById(orderId)
+        if(!order){
+            throw new AppError(404, 'Order not found')
+        }
+
+        await this.orderData.deleteOrder(orderId, order.provider, order.product);
     }
 
 

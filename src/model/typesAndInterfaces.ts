@@ -46,6 +46,7 @@ export interface OrderModel{
     moment:string 
     client:string
     state: 'REQUESTED' | 'FINISHED'
+    provider:string
 }
 
 export interface OrdersByMonthModel {

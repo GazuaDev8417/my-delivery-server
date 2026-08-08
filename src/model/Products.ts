@@ -1,5 +1,5 @@
 import ConnectToDatabase from "../data/Connexion"
-
+import NotificationData from "../data/NotificationData"
 
 
 export default class Product extends ConnectToDatabase{

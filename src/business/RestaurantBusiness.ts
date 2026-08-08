@@ -130,7 +130,7 @@ export default class RestaurantBusiness{
 
     public updateRestaurant = async (providerId: string, dto: UpdateRestaurantDTO): Promise<void> => {
         const { name, phone, address } = dto
-
+console.log(dto)
         if (!name || !phone || !address) {
             throw new AppError(400, "Please fill in all required profile fields")
         }

@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 
 export interface Notifications{
+    id:string
     user_id:string
     message:string
     is_read:boolean
@@ -56,6 +57,17 @@ export default class NotificationData extends ConnectToDatabase{
                 .limit(10)
             
             return notifications
+        }catch(e:any){
+            throw new Error(`Failed to fetch notifications: ${e.message || e}`)
+        }
+    }
+
+
+    deleteNotification = async(providerId:string, id:string):Promise<void>=>{
+        try{
+            await ConnectToDatabase.con(this.NOTIFICATION_TABLE)
+                .del()
+                .where({ user_id: providerId, id })
         }catch(e:any){
             throw new Error(`Failed to fetch notifications: ${e.message || e}`)
         }

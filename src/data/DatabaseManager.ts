@@ -78,6 +78,7 @@ export default class DatabaseManager extends ConnectToDatabase{
                     table.string('name', 30).notNullable()
                     table.string('password', 255).notNullable()
                     table.string('email', 150).notNullable()
+                    table.string('role', 30).defaultTo('Administrator').notNullable()
                 })
 
                 console.log(`${this.RESTAURANT_TABLE} table was created successfully`)
