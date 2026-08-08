@@ -25,7 +25,7 @@ export default class RestaurantData extends ConnectToDatabase{
         try{
 
             const [restaurant] = await ConnectToDatabase.con(this.RESTAURANT_TABLE).select(
-                'address', 'phone', 'description', 'id', 'logourl', 'name', 'email'
+                'address', 'phone', 'description', 'id', 'logourl', 'name', 'email', 'role'
             )
 
             return restaurant

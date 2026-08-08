@@ -4,6 +4,7 @@ import { restaurantRouter } from "./routes/restaurantRouter"
 import { orderRouter } from "./routes/orderRouter"
 import { statisticsRouter } from "./routes/statisticsRouter"
 import { categoryRouter } from "./routes/CategoryRoutes"
+import { notificationRouter } from "./routes/NotificationRoutes"
 
 
 app.use('/users', userRouter)
@@ -11,3 +12,4 @@ app.use('/restaurants', restaurantRouter)
 app.use('/orders', orderRouter)
 app.use('/statistics', statisticsRouter)
 app.use('/categories', categoryRouter)
+app.use('/notifications', notificationRouter)

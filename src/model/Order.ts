@@ -1,4 +1,6 @@
 import ConnectToDatabase from "../data/Connexion"
+import NotificationData from "../data/NotificationData"
+import { v4 as uuidv4 } from 'uuid'
 
 
 
@@ -36,6 +38,11 @@ export default class Order extends ConnectToDatabase{
                 description: this.description,
                 provider: this.provider
             })
+
+            await new NotificationData().saveNofitication(
+                this.provider,
+                `New order placed for ${this.product}`
+            )
         }catch(e:any){
             throw new Error(`Failed to save order: ${e.message || e}`)
         }
