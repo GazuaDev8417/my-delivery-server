@@ -130,7 +130,7 @@ export default class RestaurantController {
             const { id } = req.params 
             const updateDTO: CreateAndUpdateProductDTO = req.body
 
-            await this.restaurantBusiness.updateProduct(id, updateDTO);
+            await this.restaurantBusiness.updateProduct(id as string, updateDTO);
 
             res.status(200).json({ message: "Product updated successfully!" });
         } catch (error: any) {
@@ -153,7 +153,7 @@ export default class RestaurantController {
     public aAllProductsByClientSide = async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params
-            const productsByClientSide = await this.restaurantBusiness.aAllProductsByClientSide(id);
+            const productsByClientSide = await this.restaurantBusiness.aAllProductsByClientSide(id as string);
 
             res.status(200).json(productsByClientSide);
         } catch (error: any) {
@@ -166,7 +166,7 @@ export default class RestaurantController {
             await this.services.authenticateRestaurant(req);
             const { id } = req.params;
 
-            const product = await this.restaurantBusiness.getProductById(id);
+            const product = await this.restaurantBusiness.getProductById(id as string);
 
             res.status(200).json(product);
         } catch (error: any) {
@@ -179,7 +179,7 @@ export default class RestaurantController {
             await this.services.authenticateRestaurant(req);
             const { id } = req.params;
 
-            const productName = await this.restaurantBusiness.deleteProduct(id);
+            const productName = await this.restaurantBusiness.deleteProduct(id as string);
 
             res.status(200).json({ message: `'${productName}' deleted successfully` });
         } catch (error: any) {

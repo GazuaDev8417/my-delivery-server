@@ -37,7 +37,7 @@ export default class NotificationController{
     public updateNotification = async(req:Request, res:Response):Promise<void>=>{
         try{
             const restaurant = await this.services.authenticateRestaurant(req)
-            await this.notificationBusiness.updateNotification(restaurant.id, req.params.id)
+            await this.notificationBusiness.updateNotification(restaurant.id, req.params.id as string)
 
             res.status(200).end()
         }catch(error:any){

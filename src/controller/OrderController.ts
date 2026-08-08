@@ -41,7 +41,7 @@ export default class OrderController {
             const user = await this.services.authenticateUser(req);
             const { id } = req.params;
 
-            const order = await this.orderBusiness.getOrderById(user, id);
+            const order = await this.orderBusiness.getOrderById(user, id as string);
 
             res.status(200).json(order);
         } catch (error: any) {
@@ -52,7 +52,7 @@ export default class OrderController {
     public deleteOrder = async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
-            await this.orderBusiness.deleteOrder(id);
+            await this.orderBusiness.deleteOrder(id as string);
 
             res.status(200).json({ message: "Order successfully deleted." });
         } catch (error: any) {
@@ -65,7 +65,7 @@ export default class OrderController {
             const user = await this.services.authenticateUser(req);
             const providerId = req.params.id;
 
-            await this.orderBusiness.clearRequestedOrders(user.id, providerId);
+            await this.orderBusiness.clearRequestedOrders(user.id, providerId as string);
 
             res.status(204).send();
         } catch (error: any) {
@@ -90,7 +90,7 @@ export default class OrderController {
             const { id } = req.params;
             const { quantity } = req.body;
 
-            await this.orderBusiness.updateOrderQuantity(id, quantity);
+            await this.orderBusiness.updateOrderQuantity(id as string, quantity);
 
             res.status(200).json({ message: "Order quantity updated successfully." });
         } catch (error: any) {
@@ -115,7 +115,7 @@ export default class OrderController {
             await this.services.authenticateRestaurant(req);
             const { id } = req.params;
 
-            await this.orderBusiness.markOrderAsFinished(id);
+            await this.orderBusiness.markOrderAsFinished(id as string);
 
             res.status(200).json({ message: "Order status updated to finished." });
         } catch (error: any) {
@@ -128,7 +128,7 @@ export default class OrderController {
             await this.services.authenticateRestaurant(req);
             const { id } = req.params;
 
-            await this.orderBusiness.revertOrderToRequested(id);
+            await this.orderBusiness.revertOrderToRequested(id as string);
 
             res.status(200).json({ message: "Order status reverted to requested." });
         } catch (error: any) {
@@ -185,7 +185,7 @@ export default class OrderController {
             const restaurant = await this.services.authenticateRestaurant(req);
             const { id } = req.params;
 
-            const orders = await this.orderBusiness.getActiveOrdersByUserId(id, restaurant.id);
+            const orders = await this.orderBusiness.getActiveOrdersByUserId(id as string, restaurant.id);
 
             res.status(200).json(orders);
         } catch (error: any) {
@@ -227,7 +227,7 @@ export default class OrderController {
     public getPaymentStatus = async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
-            const status = await this.orderBusiness.getPaymentStatus(id);
+            const status = await this.orderBusiness.getPaymentStatus(id as string);
 
             res.status(200).json({ status });
         } catch (error: any) {

@@ -77,7 +77,7 @@ export default class UserController {
             await this.services.authenticateRestaurant(req);
             const { id } = req.params;
 
-            const userProfile = await this.userBusiness.getProfileByUser(id);
+            const userProfile = await this.userBusiness.getProfileByUser(id as string);
 
             res.status(200).json(userProfile);
         } catch (error: any) {
