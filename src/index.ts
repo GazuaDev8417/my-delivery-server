@@ -13,3 +13,6 @@ app.use('/orders', orderRouter)
 app.use('/statistics', statisticsRouter)
 app.use('/categories', categoryRouter)
 app.use('/notifications', notificationRouter)
+
+
+export default app

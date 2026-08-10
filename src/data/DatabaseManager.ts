@@ -28,6 +28,7 @@ export default class DatabaseManager extends ConnectToDatabase{
                     table.string('city', 30)
                     table.string('state', 30)
                     table.string('complement', 150)
+                    table.string('provider', 255)
                 })
 
                 console.log(`${this.USER_TABLE} table was created successfully`)

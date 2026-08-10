@@ -135,7 +135,7 @@ export default class StatisticsData extends ConnectToDatabase{
 
             return [
                 { title: 'Revenue', value: totalRevenue || '0.00' },
-                { title: 'Custmoer', value: totalCustomers || 0 },
+                { title: 'Customer', value: totalCustomers || 0 },
                 { title: 'Orders', value: totalOrder || 0 },
                 { title: 'Growth', value: `${growthPercentage}%` }
             ]

@@ -44,6 +44,7 @@ export default class RestaurantController {
     public loginRestaurant = async (req: Request, res: Response): Promise<void> => {
         try {
             const loginDTO: LoginDTO = req.body;
+            console.log(loginDTO)
             const token = await this.restaurantBusiness.loginRestaurant(loginDTO);
 
             res.status(200).json(token);
@@ -89,6 +90,7 @@ export default class RestaurantController {
     public requestPasswordReset = async (req: Request, res: Response): Promise<void> => {
         try {
             const dto: RequestPasswordResetDTO = req.body;
+            console.log(dto)
             const previewUrl = await this.restaurantBusiness.requestPasswordReset(dto);
 
             res.status(200).json(previewUrl);
@@ -100,8 +102,8 @@ export default class RestaurantController {
     public updatePassword = async (req: Request, res: Response): Promise<void> => {
         try {
             const dto: ConfirmPasswordResetDTO = req.body;
-            const user = await this.services.authenticateRestaurant(req)
-            await this.restaurantBusiness.updatePassword(dto, user.id);
+            const restaurant = await this.services.authenticateRestaurant(req)
+            await this.restaurantBusiness.updatePassword(dto, restaurant.id);
 
             res.status(200).json({ message: "Password updated successfully" });
         } catch (error: any) {

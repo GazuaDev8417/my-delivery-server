@@ -47,6 +47,20 @@ export default class RestaurantData extends ConnectToDatabase{
             throw new Error(`Error fetching restaurant by ID: ${e.message || e}`)
         }
     }
+
+
+    public findPasswordByRestaurantId = async(id:string):Promise<RestaurantModel>=>{
+        try{
+
+            const [restaurantPassword] = await ConnectToDatabase.con(this.RESTAURANT_TABLE)
+            .select('password')
+            .where({ id })
+
+            return restaurantPassword
+        }catch(e:any){
+            throw new Error(`Error fetching restaurant by ID: ${e.message || e}`)
+        }
+    }
     
 
     findRestaurantByEmail = async(email:string):Promise<RestaurantModel>=>{
