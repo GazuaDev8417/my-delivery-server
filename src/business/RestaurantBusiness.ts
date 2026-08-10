@@ -217,8 +217,8 @@ export default class RestaurantBusiness{
 
         const id = this.services.idGenerator()
         const product = new Product(category, description, id, name, image, price, stock, providerId, status)
-
         
+
         await this.restaurantData.insertProduct(product)
     }
 
