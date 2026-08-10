@@ -40,6 +40,6 @@
     "@types/nodemailer": "^8.0.1",
     "@types/uuid": "^11.0.0",
     "sucrase": "^3.35.0",
-    "typescript": "^7.0.2"
+    "typescript": "^5.9.3"
   }
 }
