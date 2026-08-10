@@ -1,5 +1,5 @@
 import { Request } from 'express'
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'crypto'
 import * as jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import UserData from '../data/UserData'
@@ -37,7 +37,7 @@ export default class Services{
 
 
     public idGenerator = ():string=>{
-        return uuidv4()
+        return randomUUID()
     }
 
     public getTokenData = (token:string):TokenData=>{

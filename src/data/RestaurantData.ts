@@ -1,5 +1,5 @@
 import ConnectToDatabase from "./Connexion"
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID as uuidv4 } from "crypto"
 import Restaurant from "../model/Restaurant"
 import Product from "../model/Products"
 import { ProductModel, RestaurantModel } from "../model/typesAndInterfaces"

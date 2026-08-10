@@ -13,15 +13,8 @@ app.use(express.json())
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || []
 
-console.log('Allowed origins:', allowedOrigins)
-console.log('ALLOWED_ORIGINS:', process.env.ALLOWED_ORIGINS)
-
 app.use(cors({
     origin: (origin, callback)=>{
-
-        console.log('Request origin', origin)
-        console.log('Origin allowed', !origin || allowedOrigins.includes(origin))
-
         if(!origin || allowedOrigins.includes(origin)){
             callback(null, true)
         }else{

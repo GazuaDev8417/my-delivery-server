@@ -1,8 +1,7 @@
 import ConnectToDatabase from "./Connexion"
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID as uuidv4 } from 'crypto'
 import User from "../model/User"
 import { OrderModel, UserModel } from "../model/typesAndInterfaces"
-import NotificationData from "./NotificationData"
 
 
 

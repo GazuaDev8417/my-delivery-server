@@ -5,7 +5,7 @@ import Services, { AppError } from "../services/Authentication"
 import { OrderModel, UserModel, OrdersByMonthModel } from "../model/typesAndInterfaces"
 import axios from "axios"
 import { config } from "dotenv"
-import { v4 as uuidv4 } from "uuid"
+import { randomUUID as uuidv4 } from "crypto"
 
 
 config()
