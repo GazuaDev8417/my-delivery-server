@@ -68,6 +68,9 @@ export default class UserBusiness{
         }
 
         const registeredUser = await this.userData.findByEmail(email)
+        if(registeredUser){
+            throw new AppError(409, "This email is already registered. Please use a different email.")
+        }
         const id = this.services.idGenerator()
         const hashedPassword = this.services.hashPassword(password)
         const token = this.tokenService.generateToken(id)
@@ -137,7 +140,7 @@ export default class UserBusiness{
 
         const user = await this.userData.findByEmail(email)
         if (!user) {
-            return `As this is a demonstration you have to insert visitor@email.com to be redirected to a test email account and reset your password`
+            return `As this is a demonstration you have to insert admin@example.com to be redirected to a test email account and reset your password`
         }
        
         const resetToken = this.tokenService.generateResetToken(user.id)
@@ -171,10 +174,14 @@ export default class UserBusiness{
 
 
     public registerAddress = async (userId: string, addressDTO: AddressDTO): Promise<void> => {
-        const { street, cep, number, neighbourhood, city, state } = addressDTO
+        const { street, cep, number, neighbourhood, city, state, complement } = addressDTO
 
-        if (!street || !cep || !number || !neighbourhood || !city || !state) {
+        if (!street || !cep || !neighbourhood || !city || !state) {
             throw new AppError(400, "Please fill in all required address fields")
+        }
+
+        if(!number && !complement){
+            throw new AppError(400, "Please provide either a number or a complement for the address")
         }
 
         await this.userData.registerAddress(userId, addressDTO)
@@ -194,13 +201,14 @@ export default class UserBusiness{
         }
         
         await this.userData.updateUser(userId, username, email, phone)
-    }
+    }    
 
 
     public deleteUser = async (userId: string): Promise<void> => {
-        const user = await this.userData.findById(userId)
-        if (!user) {
-            throw new AppError(404, "User not found")
+        const requestedOrdersByUser = await this.userData.findActiveOrdersByClient(userId)
+        
+        if (requestedOrdersByUser.length > 0) {
+            throw new AppError(403, "You have active orders. Please complete or cancel them before deleting your account.")
         }
 
         await this.userData.deleteUser(userId)

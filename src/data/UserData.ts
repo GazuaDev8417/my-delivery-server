@@ -1,7 +1,8 @@
 import ConnectToDatabase from "./Connexion"
 import { v4 as uuidv4 } from 'uuid'
 import User from "../model/User"
-import { UserModel } from "../model/typesAndInterfaces"
+import { OrderModel, UserModel } from "../model/typesAndInterfaces"
+import NotificationData from "./NotificationData"
 
 
 
@@ -21,7 +22,6 @@ export default class UserData extends ConnectToDatabase{
     protected USER_TABLE = 'users'
     protected ORDER_TABLE = 'orders'
     protected RESET_PASSWORD_TABLE = 'reset_password'
-    protected CUSTOMER_TABLE = 'customer'
 
 //USER FIELD 
     public createUser = async (user: User): Promise<void> => {
@@ -163,7 +163,19 @@ export default class UserData extends ConnectToDatabase{
             throw new Error(`Failed to update user profile: ${error.message || error}`)
         }
     }
-    
+
+
+    public findActiveOrdersByClient = async(client:string):Promise<OrderModel[]>=>{
+        try{
+            
+            return await ConnectToDatabase.con(this.ORDER_TABLE)
+                .where({ client, state: 'REQUESTED' })
+
+        }catch(e:any){
+            throw new Error(`Error fetching active orders: ${e.message || e}`)
+        }
+    }
+        
 
     public deleteUser = async (id: string): Promise<void> => {
         const connection = ConnectToDatabase.con;

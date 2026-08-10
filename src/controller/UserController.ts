@@ -139,7 +139,7 @@ export default class UserController {
             const user = await this.services.authenticateUser(req);
             await this.userBusiness.deleteUser(user.id);
 
-            res.status(200).json({ message: "User account deleted successfully" });
+            res.status(200).json({ message: "User account and all its data was deleted successfully" });
         } catch (error: any) {
             this.handleError(res, error);
         }

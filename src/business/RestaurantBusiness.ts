@@ -35,7 +35,7 @@ export interface RequestPasswordResetDTO {
 
 export interface ConfirmPasswordResetDTO {
     newPassword?: string
-    confirmNewPassword?: string
+    currentPassword?: string
 }
 
 export interface CreateAndUpdateProductDTO{
@@ -130,7 +130,7 @@ export default class RestaurantBusiness{
 
     public updateRestaurant = async (providerId: string, dto: UpdateRestaurantDTO): Promise<void> => {
         const { name, phone, address } = dto
-console.log(dto)
+
         if (!name || !phone || !address) {
             throw new AppError(400, "Please fill in all required profile fields")
         }
@@ -158,7 +158,7 @@ console.log(dto)
 
         const user = await this.restaurantData.findRestaurantByEmail(email)
         if (!user) {
-            return `As this is a demonstration you have to insert disk90@email.com to be redirected to a test email account and reset your password`
+            return `As this is a demonstration you have to insert admin@example to be redirected to a test email account and reset your password`
         }
         
         const resetToken = this.tokenService.generateResetToken(user.id)
@@ -171,18 +171,20 @@ console.log(dto)
 
 
     public updatePassword = async (dto: ConfirmPasswordResetDTO, restaurantId:string): Promise<void> => {
-        const { newPassword, confirmNewPassword } = dto
+        const restaurantPassword = await this.restaurantData.findPasswordByRestaurantId(restaurantId)
+        const { newPassword, currentPassword } = dto
 
-        if (!confirmNewPassword || !newPassword) {
-            throw new AppError(400, "Missing email, token, or new password")
+        if (!currentPassword || !newPassword) {
+            throw new AppError(400, "Please fill in the required fields to update your password")
         }
 
         if (newPassword.length < 6) {
             throw new AppError(400, "New password must be at least 6 characters")
         }
 
-        if (newPassword !== confirmNewPassword) {
-            throw new AppError(400, "Passwords do not matach")
+        const isMatch = this.services.comparePassword(currentPassword, restaurantPassword.password)
+        if (!isMatch) {
+            throw new AppError(400, "Current password is incorrect")
         }
 
         const hashedPassword = this.services.hashPassword(newPassword)
