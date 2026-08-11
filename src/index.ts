@@ -12,7 +12,6 @@ import { notificationRouter } from "./routes/NotificationRoutes"
 // Swagger UI route setup
 const SWAGGER_VERSION = "5.11.0"
 const CDN_BASE = `https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/${SWAGGER_VERSION}`
-const CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.0.0/swagger-ui.min.css"
 
 const swaggerUiOptions:swaggerUi.SwaggerUiOptions = {
     customCssUrl: `${CDN_BASE}/swagger-ui.min.css`,

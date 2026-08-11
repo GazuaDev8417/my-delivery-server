@@ -168,9 +168,10 @@ restaurantRouter.post("/password/reset-request", restaurantController.requestPas
  *         description: Restaurant not found.
  */
 restaurantRouter.get("/profile", restaurantController.getRestaurantById);
+restaurantRouter.get("/restaurant/:id", restaurantController.getRestaurantByCustomer);
 
 
-restaurantRouter.get("/", restaurantController.getRestaurant);
+restaurantRouter.get("/", restaurantController.getRestaurants);
 
 // ==========================================
 // Product Catalog & Management Operations

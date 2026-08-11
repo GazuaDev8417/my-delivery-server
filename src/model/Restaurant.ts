@@ -13,7 +13,8 @@ export default class Restaurant extends ConnectToDatabase{
         private logourl:string,
         private name:string,
         private email:string,
-        private password:string
+        private password:string,
+        private role:string
     ){ super() }
 
     save = async():Promise<void>=>{
@@ -26,7 +27,8 @@ export default class Restaurant extends ConnectToDatabase{
                 logourl: this.logourl,
                 name: this.name,
                 email: this.email,
-                password: this.password
+                password: this.password,
+                role: this.role
             })
         }catch(e:any){
             throw new Error(`Failed to save restaurant: ${e.message} || e`)

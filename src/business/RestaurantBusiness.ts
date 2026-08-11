@@ -72,7 +72,7 @@ export default class RestaurantBusiness{
 
         const existingRestaurant = await this.restaurantData.findRestaurantByEmail(email)
         if(existingRestaurant){
-            throw new AppError(409, `'${existingRestaurant.name}' is already registered`)
+            throw new AppError(409, `This email is already registered`)
         }
         
         
@@ -88,7 +88,8 @@ export default class RestaurantBusiness{
             logourl, 
             name,
             email,
-            hashedPassword
+            hashedPassword,
+            'Administrator'
         )
         
         await this.restaurantData.createRestaurant(restaurant)
@@ -118,13 +119,13 @@ export default class RestaurantBusiness{
     }
 
 
-    public getRestaurant = async (): Promise<RestaurantModel> => {
-        const restaurant = await this.restaurantData.getRestaurant()
-        if (!restaurant) {
+    public getRestaurants = async (): Promise<RestaurantModel[]> => {
+        const restaurants = await this.restaurantData.getRestaurants()
+        if (restaurants.length === 0) {
             throw new AppError(404, "Restaurant not found")
         }
 
-        return restaurant
+        return restaurants
     }
 
 

@@ -52,12 +52,34 @@ export default class RestaurantController {
             this.handleError(res, error);
         }
     };
+    
+    public getRestaurants = async (_req: Request, res: Response): Promise<void> => {
+        try {
+
+            const restaurants = await this.restaurantBusiness.getRestaurants();
+
+            res.status(200).json(restaurants);
+        } catch (error: any) {
+            this.handleError(res, error);
+        }
+    }
 
     public getRestaurantById = async (req: Request, res: Response): Promise<void> => {
         try {
             const restaurantProfile = await this.services.authenticateRestaurant(req);
             const restaurant = await this.restaurantBusiness.getRestaurantById(restaurantProfile.id);
+            
+            res.status(200).json(restaurant);
+        } catch (error: any) {
+            this.handleError(res, error);
+        }
+    };
 
+    public getRestaurantByCustomer = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { id } = req.params;
+            const restaurant = await this.restaurantBusiness.getRestaurantById(id as string);
+            
             res.status(200).json(restaurant);
         } catch (error: any) {
             this.handleError(res, error);
@@ -77,15 +99,6 @@ export default class RestaurantController {
         }
     }
 
-    public getRestaurant = async (_req: Request, res: Response): Promise<void> => {
-        try {
-            const restaurant = await this.restaurantBusiness.getRestaurant();
-
-            res.status(200).json(restaurant);
-        } catch (error: any) {
-            this.handleError(res, error);
-        }
-    };
 
     public requestPasswordReset = async (req: Request, res: Response): Promise<void> => {
         try {
