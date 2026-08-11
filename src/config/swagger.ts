@@ -1,4 +1,5 @@
 import swaggerJsdoc from 'swagger-jsdoc'
+import path from 'path'
 
 
 
@@ -41,7 +42,12 @@ const options: swaggerJsdoc.Options = {
             }
         }
     },
-    apis: ['./src/routes/*.ts', './api/index.ts']    
+    apis: [
+        path.join(__dirname, '../routes/*.ts'),
+        path.join(__dirname, '../routes/*.js'),
+        path.join(__dirname, '../api/*.ts'),
+        path.join(__dirname, '../api/*.js')
+    ]    
 }
 
 
