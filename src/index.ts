@@ -1,10 +1,25 @@
 import { app } from "./app"
+import swaggerUi from 'swagger-ui-express'
+import { swaggerSpec } from './config/swagger'
 import { userRouter } from "./routes/userRouter"
 import { restaurantRouter } from "./routes/restaurantRouter"
 import { orderRouter } from "./routes/orderRouter"
 import { statisticsRouter } from "./routes/statisticsRouter"
 import { categoryRouter } from "./routes/CategoryRoutes"
 import { notificationRouter } from "./routes/NotificationRoutes"
+
+
+// Swagger UI route setup
+const CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.0.0/swagger-ui.min.css"
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCssUrl: CSS_URL,
+    customSiteTitle: 'My Delivery API Documentation',
+}))
+
+app.get('/', (req, res) => {
+    res.redirect('/api-docs')
+})
 
 
 app.use('/users', userRouter)
