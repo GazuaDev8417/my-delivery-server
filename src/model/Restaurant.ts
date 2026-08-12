@@ -1,5 +1,5 @@
 import ConnectToDatabase from "../data/Connexion"
-
+import CustomerNotificationData from "../data/CustomerNotificationData"
 
 
 export default class Restaurant extends ConnectToDatabase{
@@ -30,6 +30,10 @@ export default class Restaurant extends ConnectToDatabase{
                 password: this.password,
                 role: this.role
             })
+
+            await new CustomerNotificationData().saveCustomerNofitication(
+                `${this.name} is now on My Delivery!`
+            )
         }catch(e:any){
             throw new Error(`Failed to save restaurant: ${e.message} || e`)
         }

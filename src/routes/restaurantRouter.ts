@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { upload, uploadToCloudinary } from "../config/multer";
-import { uploadLocal } from "../config/duplicateUpload";
+//import { uploadLocal } from "../config/duplicateUpload";
 import RestaurantController from "../controller/RestaurantController";
 import RestaurantBusiness from "../business/RestaurantBusiness";
 import RestaurantData from "../data/RestaurantData";
@@ -362,3 +362,4 @@ restaurantRouter.patch("/password/update", restaurantController.updatePassword);
  *         description: Product not found.
  */
 restaurantRouter.delete("/product/:id", restaurantController.deleteProduct);
+restaurantRouter.delete("/account", restaurantController.deleteRestaurantAccount);

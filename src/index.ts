@@ -7,6 +7,7 @@ import { orderRouter } from "./routes/orderRouter"
 import { statisticsRouter } from "./routes/statisticsRouter"
 import { categoryRouter } from "./routes/CategoryRoutes"
 import { notificationRouter } from "./routes/NotificationRoutes"
+import { customerNotificationRouter } from "./routes/customerNotificationRoutes"
 
 
 // Swagger UI route setup
@@ -76,5 +77,7 @@ app.use('/orders', orderRouter)
 app.use('/statistics', statisticsRouter)
 app.use('/categories', categoryRouter)
 app.use('/notifications', notificationRouter)
+app.use('/customers-notifications', customerNotificationRouter)
+
 
 export default app

@@ -2,13 +2,15 @@ import ConnectToDatabase from "./Connexion"
 import { randomUUID as uuidv4 } from "crypto"
 import Restaurant from "../model/Restaurant"
 import Product from "../model/Products"
-import { ProductModel, RestaurantModel } from "../model/typesAndInterfaces"
+import { ProductModel, RestaurantModel, OrderModel } from "../model/typesAndInterfaces"
+import CustomerNotificationData from "./CustomerNotificationData"
 
 
 
 export default class RestaurantData extends ConnectToDatabase{
     protected RESTAURANT_TABLE = 'restaurants'
     protected PRODUCT_TABLE = 'products'
+    protected ORDER_TABLE = 'orders'
     protected RESET_PASSWORD_TABLE = 'reset_password'
 
 
@@ -127,12 +129,39 @@ export default class RestaurantData extends ConnectToDatabase{
         }
     }
 
+    public deleteRestaurantAccount = async (id: string): Promise<void> => {
+        try {
+
+            const [restaurant] = await ConnectToDatabase.con(this.RESTAURANT_TABLE)
+                .where({ id })
+
+            await ConnectToDatabase.con.transaction(async(trx)=>{
+
+                await trx(this.ORDER_TABLE).where({ provider: id }).del()
+                await trx(this.PRODUCT_TABLE).where({ provider: id }).del()
+                await trx(this.RESTAURANT_TABLE).where({ id }).del()
+
+            })
+
+            await new CustomerNotificationData().saveCustomerNofitication(
+                `${restaurant.name} deleted its account from My Delivery`
+            )
+        } catch (error: any) {
+            throw new Error(`Failed to clear reset token: ${error.message || error}`)
+        }
+    }
+    
+
 // ======================= PRODUCTS ========================
 
-    public insertProduct = async(product:Product):Promise<void>=>{
+    public insertProduct = async(product:Product, providerId:string):Promise<void>=>{
         try{
+            
+            const [restaurant] = await ConnectToDatabase.con(this.RESTAURANT_TABLE)
+                .where({ id: providerId })
+            const restaurantName = restaurant.name
 
-            await product.save()
+            await product.save(restaurantName)
 
         }catch(e:any){
             throw new Error(`Error inserting product: ${e.message || e}`)
@@ -226,5 +255,18 @@ export default class RestaurantData extends ConnectToDatabase{
         }catch(e:any){
             throw new Error(`Error deleting product: ${e.message || e}`)
         }
+    }
+
+// ======================= ORDERS ========================
+    public findAllRequesteOrders = async(id:string):Promise<OrderModel[]>=>{
+        try{
+
+            const orders = await ConnectToDatabase.con(this.ORDER_TABLE)
+                .where({ provider: id })
+
+            return orders
+        }catch(e:any){
+            throw new Error(`Error fetching orders: ${e.message || e}`)
+        }   
     }
 }

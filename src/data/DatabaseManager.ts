@@ -9,6 +9,7 @@ export default class DatabaseManager extends ConnectToDatabase{
     static ORDER_TABLE = 'orders'
     static RESET_PASSWORD_TABLE = 'reset_password'
     static NOTIFICATION_TABLE = 'notifications'
+    static USERS_NOTIFICATION_TABLE = 'customer_notifications'
 
 
     public static async createUsersTable():Promise<void>{
@@ -28,7 +29,6 @@ export default class DatabaseManager extends ConnectToDatabase{
                     table.string('city', 30)
                     table.string('state', 30)
                     table.string('complement', 150)
-                    table.string('provider', 255)
                 })
 
                 console.log(`${this.USER_TABLE} table was created successfully`)
@@ -153,7 +153,7 @@ export default class DatabaseManager extends ConnectToDatabase{
             if (!exists) {
                 await this.con.schema.createTable(this.NOTIFICATION_TABLE, (table) => {
                     table.string('id', 36).primary().notNullable()
-                    table.string('user_id', 36).notNullable() // Links the notification to a user/restaurant
+                    table.string('user_id', 36).notNullable()
                     table.string('message', 255).notNullable()
                     table.boolean('is_read').defaultTo(false).notNullable()
                     table.timestamp('created_at').defaultTo(this.con.fn.now()).notNullable()
@@ -162,6 +162,26 @@ export default class DatabaseManager extends ConnectToDatabase{
                 console.log(`${this.NOTIFICATION_TABLE} table was created successfully`)
             } else {
                 console.log(`${this.NOTIFICATION_TABLE} table already exists!`)
+            }
+        } catch (e) {
+            console.log(`Error creating notifications table: ${e}`)
+        }
+    }
+
+    public static async createCustomerNotificationsTable(): Promise<void> {
+        try {
+            const exists = await this.con.schema.hasTable(this.USERS_NOTIFICATION_TABLE)
+            if (!exists) {
+                await this.con.schema.createTable(this.USERS_NOTIFICATION_TABLE, (table) => {
+                    table.string('id', 36).primary().notNullable()
+                    table.string('notification', 255).notNullable()
+                    table.boolean('is_read').defaultTo(false).notNullable()
+                    table.timestamp('created_at').defaultTo(this.con.fn.now()).notNullable()
+                })
+
+                console.log(`${this.USERS_NOTIFICATION_TABLE} table was created successfully`)
+            } else {
+                console.log(`${this.USERS_NOTIFICATION_TABLE} table already exists!`)
             }
         } catch (e) {
             console.log(`Error creating notifications table: ${e}`)
@@ -183,5 +203,6 @@ export default class DatabaseManager extends ConnectToDatabase{
     await DatabaseManager.createOrdersTable()
     await DatabaseManager.createResetPasswordTable()
     await DatabaseManager.createNotificationsTable()
+    await DatabaseManager.createCustomerNotificationsTable()
     await DatabaseManager.closeConnexion()
 })()

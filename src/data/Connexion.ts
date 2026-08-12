@@ -7,7 +7,7 @@ config()
 export default abstract class ConnectToDatabase{
     protected static con = knex({
         client: 'pg',
-        connection: process.env.MYDELIVERY_DB        
+        connection: process.env.MYDELIVERY_DB      
     })
     
     public static testMyDeliveryConnexion = async():Promise<void>=>{

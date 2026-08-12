@@ -193,6 +193,16 @@ export default class RestaurantBusiness{
         await this.restaurantData.clearResetToken(restaurantId)
     }
 
+
+    public deleteRestaurantAccount = async(id:string):Promise<void>=>{
+        const orders = await this.restaurantData.findAllRequesteOrders(id)
+        if(orders.length > 0){
+            throw new AppError(403, `You still have ${orders.length} pending orders to complete`)
+        }
+
+        await this.restaurantData.deleteRestaurantAccount(id)
+    }
+
 // ====================== PRODUCTS =============================== 
     public insertProduct = async (productDTO: CreateAndUpdateProductDTO, providerId:string): Promise<void> => {
         const { category, description, name, price, image, stock } = productDTO
@@ -220,7 +230,7 @@ export default class RestaurantBusiness{
         const product = new Product(category, description, id, name, image, price, stock, providerId, status)
         
 
-        await this.restaurantData.insertProduct(product)
+        await this.restaurantData.insertProduct(product, providerId)
     }
 
 

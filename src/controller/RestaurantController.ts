@@ -124,6 +124,17 @@ export default class RestaurantController {
         }
     };
 
+    public deleteRestaurantAccount = async(req:Request, res:Response):Promise<void>=>{
+        try{
+            const restaurant = await this.services.authenticateRestaurant(req)
+            await this.restaurantBusiness.deleteRestaurantAccount(restaurant.id)
+
+            res.status(200).send('You account was deleted')
+        }catch(e:any){
+            this.handleError(res, e);
+        }
+    }
+
     // ==================== PRODUCTS ====================
 
     public insertProduct = async (req: Request, res: Response): Promise<void> => {

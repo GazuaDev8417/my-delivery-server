@@ -1,5 +1,5 @@
 import ConnectToDatabase from "../data/Connexion"
-import NotificationData from "../data/NotificationData"
+import CustomerNotificationData from "../data/CustomerNotificationData"
 
 
 export default class Product extends ConnectToDatabase{
@@ -17,7 +17,7 @@ export default class Product extends ConnectToDatabase{
         private status:string
     ){ super() }
 
-    save = async():Promise<void>=>{
+    save = async(providerName:string):Promise<void>=>{
         try{
             await ConnectToDatabase.con(this.PRODUCT_TABLE).insert({
                 category: this.category,
@@ -30,6 +30,10 @@ export default class Product extends ConnectToDatabase{
                 provider: this.provider,
                 status: this.status
             })
+
+            await new CustomerNotificationData().saveCustomerNofitication(
+                `The ${this.name} is now added to ${providerName} stock.`
+            )
         }catch(e:any){
             throw new Error(`Failed to save product: ${e.message || e}`)
         }
