@@ -152,12 +152,13 @@ export default class OrderData extends ConnectToDatabase{
     }
         
     
-    public deleteOrder = async(id:string, product:string):Promise<void>=>{
+    public deleteOrder = async(order:OrderModel):Promise<void>=>{
         try{
 
-            await ConnectToDatabase.con(this.ORDER_TABLE).delete().where({ id })
+            await ConnectToDatabase.con(this.ORDER_TABLE).delete().where({ id: order.id })
             await new ProviderNotificationData().saveProviderNofitication(
-                `An order for ${product} was removed`
+                `An order for ${order.product} was removed`,
+                order.provider
             )
 
         }catch(e:any){

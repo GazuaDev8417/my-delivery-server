@@ -13,10 +13,10 @@ export interface ProviderNotifications{
 export default class ProviderNotificationData extends ConnectToDatabase{
     protected MATRIX_PROVIDER_NOTIFICATION_TABLE = 'matrix_provider_notifications'
     protected PROVIDER_NOTIFICATION_TABLE = 'provider_notifications'
-    protected USER_TABLE = 'restaurants'
+    protected PROVIDER_TABLE = 'restaurants'
     
 
-    saveProviderNofitication = async(notification:string):Promise<void>=>{
+    saveProviderNofitication = async(notification:string, providerId:string):Promise<void>=>{
         try{
             const notificationId = uuidv4()
             
@@ -25,31 +25,27 @@ export default class ProviderNotificationData extends ConnectToDatabase{
                     id: notificationId,
                     notification
                 })
-
-            const customers = await ConnectToDatabase.con(this.USER_TABLE).select('id')
-            if(customers.length > 0){
-                    const userNotifications = customers.map(c=>({
-                    id: uuidv4(),
-                    notification_id: notificationId,
-                    user_id: c.id,
-                    is_read: false
-                }))
                 
-                await ConnectToDatabase.con(this.PROVIDER_NOTIFICATION_TABLE).insert(userNotifications)
-            }
+                
+            await ConnectToDatabase.con(this.PROVIDER_NOTIFICATION_TABLE).insert({
+                id: uuidv4(),
+                notification_id: notificationId,
+                user_id: providerId,
+                is_read: false
+            })
         }catch(e:any){
             throw new Error(`Failed to save notification: ${e.message || e}`)
         }
     }
 
 
-    updateProviderNotification = async(userId:string, id:string):Promise<void>=>{
+    updateProviderNotification = async(providerId:string, id:string):Promise<void>=>{
         try{
             await ConnectToDatabase.con(this.PROVIDER_NOTIFICATION_TABLE)
                 .update({ is_read: true })
                 .where({
                     notification_id: id,
-                    user_id: userId
+                    user_id: providerId
                 })
         }catch(e:any){
             throw new Error(`Failed to update notification: ${e.message || e}`)
@@ -57,18 +53,18 @@ export default class ProviderNotificationData extends ConnectToDatabase{
     }
 
 
-    updateAllProviderNotification = async(userId:string):Promise<void>=>{
+    updateAllProviderNotification = async(providerId:string):Promise<void>=>{
         try{
             await ConnectToDatabase.con(this.PROVIDER_NOTIFICATION_TABLE)
                 .update({ is_read: true })
-                .where({ user_id: userId })
+                .where({ user_id: providerId })
         }catch(e:any){
             throw new Error(`Failed to update notification: ${e.message || e}`)
         }
     }
 
 
-    getProviderNotifications = async(userId:string):Promise<ProviderNotifications[]>=>{
+    getProviderNotifications = async(providerId:string):Promise<ProviderNotifications[]>=>{
         try{  
             const notifications = await ConnectToDatabase.con(this.PROVIDER_NOTIFICATION_TABLE)
                 .join(
@@ -81,7 +77,7 @@ export default class ProviderNotificationData extends ConnectToDatabase{
                     `${this.MATRIX_PROVIDER_NOTIFICATION_TABLE}.created_at`,
                     `${this.PROVIDER_NOTIFICATION_TABLE}.is_read`,
 
-                ).where(`${this.PROVIDER_NOTIFICATION_TABLE}.user_id`, userId)
+                ).where(`${this.PROVIDER_NOTIFICATION_TABLE}.user_id`, providerId)
 
             return notifications
         }catch(e:any){

@@ -38,10 +38,8 @@ export default class OrderController {
 
     public getOrderById = async (req: Request, res: Response): Promise<void> => {
         try {
-            const user = await this.services.authenticateUser(req);
             const { id } = req.params;
-
-            const order = await this.orderBusiness.getOrderById(user, id as string);
+            const order = await this.orderBusiness.getOrderById(id as string);
 
             res.status(200).json(order);
         } catch (error: any) {

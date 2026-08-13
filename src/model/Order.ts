@@ -39,7 +39,8 @@ export default class Order extends ConnectToDatabase{
             })
 
             await new ProviderNotificationData().saveProviderNofitication(
-                `New order placed for ${this.product}`
+                `New order placed for ${this.product}`,
+                this.provider
             )
         }catch(e:any){
             throw new Error(`Failed to save order: ${e.message || e}`)

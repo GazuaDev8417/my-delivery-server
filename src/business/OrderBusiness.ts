@@ -70,7 +70,7 @@ export default class OrderBusiness{
     }
     
 
-    public getOrderById = async(user:UserModel, orderId:string):Promise<OrderModel>=>{
+    public getOrderById = async(orderId:string):Promise<OrderModel>=>{
         const order = await this.orderData.findOrderById(orderId)
         if(!order){
             throw new AppError(404, 'Order not found')
@@ -86,7 +86,7 @@ export default class OrderBusiness{
             throw new AppError(404, 'Order not found')
         }
 
-        await this.orderData.deleteOrder(orderId, order.product);
+        await this.orderData.deleteOrder(order);
     }
 
 

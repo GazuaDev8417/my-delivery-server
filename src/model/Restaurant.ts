@@ -32,7 +32,8 @@ export default class Restaurant extends ConnectToDatabase{
             })
 
             await new CustomerNotificationData().saveCustomerNofitication(
-                `${this.name} is now on My Delivery!`
+                `${this.name} is now on My Delivery!`,
+                this.id
             )
         }catch(e:any){
             throw new Error(`Failed to save restaurant: ${e.message} || e`)
