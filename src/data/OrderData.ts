@@ -152,7 +152,7 @@ export default class OrderData extends ConnectToDatabase{
     }
         
     
-    public deleteOrder = async(id:string, providerId:string, product:string):Promise<void>=>{
+    public deleteOrder = async(id:string, product:string):Promise<void>=>{
         try{
 
             await ConnectToDatabase.con(this.ORDER_TABLE).delete().where({ id })

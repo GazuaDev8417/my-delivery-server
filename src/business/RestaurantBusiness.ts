@@ -264,7 +264,6 @@ export default class RestaurantBusiness{
             stock,
             status
         )
-        
     }
 
 
@@ -298,14 +297,13 @@ export default class RestaurantBusiness{
     }
 
 
-    public deleteProduct = async (productId: string): Promise<string> => {
+    public deleteProduct = async (productId: string): Promise<void> => {
         const product = await this.restaurantData.findProductById(productId)
         if (!product) {
             throw new AppError(404, "Product not found")
         }
-
-        await this.restaurantData.deleteProduct(productId)
-        return product.name
+        
+        await this.restaurantData.deleteProduct(product)        
     }
 }
 

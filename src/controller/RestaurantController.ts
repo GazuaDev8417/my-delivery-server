@@ -44,7 +44,6 @@ export default class RestaurantController {
     public loginRestaurant = async (req: Request, res: Response): Promise<void> => {
         try {
             const loginDTO: LoginDTO = req.body;
-            console.log(loginDTO)
             const token = await this.restaurantBusiness.loginRestaurant(loginDTO);
 
             res.status(200).json(token);
@@ -103,7 +102,6 @@ export default class RestaurantController {
     public requestPasswordReset = async (req: Request, res: Response): Promise<void> => {
         try {
             const dto: RequestPasswordResetDTO = req.body;
-            console.log(dto)
             const previewUrl = await this.restaurantBusiness.requestPasswordReset(dto);
 
             res.status(200).json(previewUrl);
@@ -204,10 +202,11 @@ export default class RestaurantController {
         try {
             await this.services.authenticateRestaurant(req);
             const { id } = req.params;
+            const product = await this.restaurantBusiness.getProductById(id as string)
 
-            const productName = await this.restaurantBusiness.deleteProduct(id as string);
+            await this.restaurantBusiness.deleteProduct(id as string);
 
-            res.status(200).json({ message: `'${productName}' deleted successfully` });
+            res.status(200).json({ message: `'${product.name}' deleted successfully` });
         } catch (error: any) {
             this.handleError(res, error);
         }

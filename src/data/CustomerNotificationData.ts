@@ -16,14 +16,15 @@ export default class CustomerNotificationData extends ConnectToDatabase{
     protected USER_TABLE = 'users'
     
 
-    saveCustomerNofitication = async(notification:string):Promise<void>=>{
+    saveCustomerNofitication = async(notification:string, provider:string):Promise<void>=>{
         try{
             const notificationId = uuidv4()
             
             await ConnectToDatabase.con(this.MATRIX_CUSTOMER_NOTIFICATION_TABLE)
                 .insert({
                     id: notificationId,
-                    notification
+                    notification,
+                    provider
                 })
 
             const customers = await ConnectToDatabase.con(this.USER_TABLE).select('id')
@@ -79,9 +80,11 @@ export default class CustomerNotificationData extends ConnectToDatabase{
                     `${this.MATRIX_CUSTOMER_NOTIFICATION_TABLE}.id`,
                     `${this.MATRIX_CUSTOMER_NOTIFICATION_TABLE}.notification`,
                     `${this.MATRIX_CUSTOMER_NOTIFICATION_TABLE}.created_at`,
+                    `${this.MATRIX_CUSTOMER_NOTIFICATION_TABLE}.provider`,
                     `${this.CUSTOMER_NOTIFICATION_TABLE}.is_read`,
 
                 ).where(`${this.CUSTOMER_NOTIFICATION_TABLE}.customer_id`, customerId)
+                
             return notifications
         }catch(e:any){
             throw new Error(`Failed to fetch notifications: ${e.message || e}`)

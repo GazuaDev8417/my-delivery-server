@@ -86,7 +86,7 @@ export default class OrderBusiness{
             throw new AppError(404, 'Order not found')
         }
 
-        await this.orderData.deleteOrder(orderId, order.provider, order.product);
+        await this.orderData.deleteOrder(orderId, order.product);
     }
 
 

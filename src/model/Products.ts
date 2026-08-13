@@ -32,7 +32,8 @@ export default class Product extends ConnectToDatabase{
             })
 
             await new CustomerNotificationData().saveCustomerNofitication(
-                `The ${this.name} is now added to ${providerName} stock.`
+                `The ${this.name} is now added to ${providerName} stock.`,
+                this.provider
             )
         }catch(e:any){
             throw new Error(`Failed to save product: ${e.message || e}`)

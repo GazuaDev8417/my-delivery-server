@@ -144,7 +144,8 @@ export default class RestaurantData extends ConnectToDatabase{
             })
 
             await new CustomerNotificationData().saveCustomerNofitication(
-                `${restaurant.name} deleted its account from My Delivery`
+                `${restaurant.name} deleted its account from My Delivery,`,
+                restaurant.id
             )
         } catch (error: any) {
             throw new Error(`Failed to clear reset token: ${error.message || error}`)
@@ -181,9 +182,27 @@ export default class RestaurantData extends ConnectToDatabase{
     ):Promise<void>=>{
         try{
 
+            const [product] = await ConnectToDatabase.con<ProductModel>(this.PRODUCT_TABLE).where({ id })
+            const previousStock = product.stock
+            const provider = product.provider
+
             await ConnectToDatabase.con(this.PRODUCT_TABLE).update({
                 category, description, name, price, photoUrl, stock, status
             }).where({ id })
+            
+            if(previousStock >= 150 && stock < 150){
+                await new CustomerNotificationData().saveCustomerNofitication(
+                    `The ${name} stock is running low`,
+                    provider
+                )
+            }
+
+            if(previousStock < 150 && stock >= 150){
+                await new CustomerNotificationData().saveCustomerNofitication(
+                    `The ${name} stock has increased. Take advantage!`,
+                    provider
+                )
+            }
             
         }catch(e:any){
             throw new Error(`Error updating product: ${e.message || e}`)
@@ -247,11 +266,16 @@ export default class RestaurantData extends ConnectToDatabase{
     }
 
 
-    public deleteProduct = async(id:string):Promise<void>=>{
+    public deleteProduct = async(product:ProductModel):Promise<void>=>{
         try{
 
-            await ConnectToDatabase.con(this.PRODUCT_TABLE).where({ id }).del()
+            const [productProvider] = await ConnectToDatabase.con<RestaurantModel>(this.RESTAURANT_TABLE).where({ id: product.provider})
 
+            await ConnectToDatabase.con(this.PRODUCT_TABLE).where({ id: product.id }).del()
+            await new CustomerNotificationData().saveCustomerNofitication(
+                `${product.name} was removed from ${productProvider.name}`,
+                product.provider
+            )
         }catch(e:any){
             throw new Error(`Error deleting product: ${e.message || e}`)
         }

@@ -14,7 +14,7 @@ export default class ProviderNotificationBusiness{
         const startOfToday = moment().tz('America/Sao_Paulo').startOf('day')
 
         for(const notification of notifications){
-            const notificationDate = moment.tz(notification.created_at, 'America/Sao_Paulo').startOf('day')
+            const notificationDate = moment(notification.created_at).tz('America/Sao_Paulo')
 
             if(notificationDate.isBefore(startOfToday)){
                 await this.notificationData.deleteCustomerNotification(providerId, notification.id)

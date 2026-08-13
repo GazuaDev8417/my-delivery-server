@@ -198,6 +198,7 @@ export default class DatabaseManager extends ConnectToDatabase{
                 await this.con.schema.createTable(this.USERS_NOTIFICATION_MATRIX_TABLE, (table) => {
                     table.string('id', 36).primary().notNullable()
                     table.string('notification', 255).notNullable()
+                    table.string('provider', 255).notNullable()
                     table.timestamp('created_at').defaultTo(this.con.fn.now()).notNullable()
                 })
 
