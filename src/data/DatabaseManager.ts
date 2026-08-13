@@ -8,7 +8,9 @@ export default class DatabaseManager extends ConnectToDatabase{
     static PRODUCT_TABLE = 'products'
     static ORDER_TABLE = 'orders'
     static RESET_PASSWORD_TABLE = 'reset_password'
-    static NOTIFICATION_TABLE = 'notifications'
+    static PROVIDER_NOTIFICATION_MATRIX_TABLE = 'matrix_provider_notifications'
+    static PROVIDER_NOTIFICATION_TABLE = 'provider_notifications'
+    static USERS_NOTIFICATION_MATRIX_TABLE = 'matrix_customer_notifications'
     static USERS_NOTIFICATION_TABLE = 'customer_notifications'
 
 
@@ -146,22 +148,62 @@ export default class DatabaseManager extends ConnectToDatabase{
             console.log(`Error creating ${this.ORDER_TABLE} table: ${e}`)
         }
     }
-
-    public static async createNotificationsTable(): Promise<void> {
+//================== NOTIFICATION TABLES ==================================
+    //================ PROVIDER ==============================
+    public static async createMatrixProviderNotificationsTable(): Promise<void> {
         try {
-            const exists = await this.con.schema.hasTable(this.NOTIFICATION_TABLE)
+            const exists = await this.con.schema.hasTable(this.PROVIDER_NOTIFICATION_MATRIX_TABLE)
             if (!exists) {
-                await this.con.schema.createTable(this.NOTIFICATION_TABLE, (table) => {
+                await this.con.schema.createTable(this.PROVIDER_NOTIFICATION_MATRIX_TABLE, (table) => {
                     table.string('id', 36).primary().notNullable()
-                    table.string('user_id', 36).notNullable()
-                    table.string('message', 255).notNullable()
+                    table.string('notification', 255).notNullable()
+                    table.timestamp('created_at').defaultTo(this.con.fn.now()).notNullable()
+                })
+
+                console.log(`${this.PROVIDER_NOTIFICATION_MATRIX_TABLE} table was created successfully`)
+            } else {
+                console.log(`${this.PROVIDER_NOTIFICATION_MATRIX_TABLE} table already exists!`)
+            }
+        } catch (e) {
+            console.log(`Error creating notifications table: ${e}`)
+        }
+    }
+
+    public static async createProviderNotificationsTable(): Promise<void> {
+        try {
+            const exists = await this.con.schema.hasTable(this.PROVIDER_NOTIFICATION_TABLE)
+            if (!exists) {
+                await this.con.schema.createTable(this.PROVIDER_NOTIFICATION_TABLE, (table) => {
+                    table.string('id', 36).primary().notNullable()
+                    table.string('notification_id', 36).notNullable()
+                    table.string('user_id', 255).notNullable().notNullable()
                     table.boolean('is_read').defaultTo(false).notNullable()
                     table.timestamp('created_at').defaultTo(this.con.fn.now()).notNullable()
                 })
 
-                console.log(`${this.NOTIFICATION_TABLE} table was created successfully`)
+                console.log(`${this.PROVIDER_NOTIFICATION_TABLE} table was created successfully`)
             } else {
-                console.log(`${this.NOTIFICATION_TABLE} table already exists!`)
+                console.log(`${this.PROVIDER_NOTIFICATION_TABLE} table already exists!`)
+            }
+        } catch (e) {
+            console.log(`Error creating notifications table: ${e}`)
+        }
+    }
+
+    //====================== CUSTOMER ==================================
+    public static async createCustomerNotificationsMatrixTable(): Promise<void> {
+        try {
+            const exists = await this.con.schema.hasTable(this.USERS_NOTIFICATION_MATRIX_TABLE)
+            if (!exists) {
+                await this.con.schema.createTable(this.USERS_NOTIFICATION_MATRIX_TABLE, (table) => {
+                    table.string('id', 36).primary().notNullable()
+                    table.string('notification', 255).notNullable()
+                    table.timestamp('created_at').defaultTo(this.con.fn.now()).notNullable()
+                })
+
+                console.log(`${this.USERS_NOTIFICATION_MATRIX_TABLE} table was created successfully`)
+            } else {
+                console.log(`${this.USERS_NOTIFICATION_MATRIX_TABLE} table already exists!`)
             }
         } catch (e) {
             console.log(`Error creating notifications table: ${e}`)
@@ -174,7 +216,8 @@ export default class DatabaseManager extends ConnectToDatabase{
             if (!exists) {
                 await this.con.schema.createTable(this.USERS_NOTIFICATION_TABLE, (table) => {
                     table.string('id', 36).primary().notNullable()
-                    table.string('notification', 255).notNullable()
+                    table.string('notification_id', 36).notNullable()
+                    table.string('customer_id', 255).notNullable()
                     table.boolean('is_read').defaultTo(false).notNullable()
                     table.timestamp('created_at').defaultTo(this.con.fn.now()).notNullable()
                 })
@@ -202,7 +245,9 @@ export default class DatabaseManager extends ConnectToDatabase{
     await DatabaseManager.createProductsTable()
     await DatabaseManager.createOrdersTable()
     await DatabaseManager.createResetPasswordTable()
-    await DatabaseManager.createNotificationsTable()
+    await DatabaseManager.createMatrixProviderNotificationsTable()
+    await DatabaseManager.createProviderNotificationsTable()
+    await DatabaseManager.createCustomerNotificationsMatrixTable()
     await DatabaseManager.createCustomerNotificationsTable()
     await DatabaseManager.closeConnexion()
 })()

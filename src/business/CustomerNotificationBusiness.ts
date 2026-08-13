@@ -23,7 +23,7 @@ export default class CustomerNotificationBusiness{
     }
 
     public findCustomerNotifications = async(customerId:string):Promise<CustomerNotifications[]>=>{
-        const notifications = await this.notificationData.getCustomerNotifications() 
+        const notifications = await this.notificationData.getCustomerNotifications(customerId) 
 
         await this.removeExpiredNotification(notifications, customerId)
 

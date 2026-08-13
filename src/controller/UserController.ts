@@ -137,7 +137,7 @@ export default class UserController {
     public deleteUser = async (req: Request, res: Response): Promise<void> => {
         try {
             const user = await this.services.authenticateUser(req);
-            await this.userBusiness.deleteUser(user.id);
+            await this.userBusiness.deleteUser(user);
 
             res.status(200).json({ message: "User account and all its data was deleted successfully" });
         } catch (error: any) {

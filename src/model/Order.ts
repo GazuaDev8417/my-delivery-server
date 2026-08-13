@@ -1,5 +1,5 @@
 import ConnectToDatabase from "../data/Connexion"
-import NotificationData from "../data/NotificationData"
+import ProviderNotificationData from "../data/ProviderNotificationData"
 
 
 
@@ -38,8 +38,7 @@ export default class Order extends ConnectToDatabase{
                 provider: this.provider
             })
 
-            await new NotificationData().saveNofitication(
-                this.provider,
+            await new ProviderNotificationData().saveProviderNofitication(
                 `New order placed for ${this.product}`
             )
         }catch(e:any){

@@ -72,7 +72,7 @@ export default class Services{
         if(!user){
             throw new AppError(404, 'User not found')
         }
-    
+
         return user
     }
 

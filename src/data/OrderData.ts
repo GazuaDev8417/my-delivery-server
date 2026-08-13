@@ -1,7 +1,7 @@
 import ConnectToDatabase from "./Connexion"
 import Orders from "../model/Order"
 import { OrderModel, OrdersByMonthModel } from "../model/typesAndInterfaces"
-import NotificationData from "./NotificationData"
+import ProviderNotificationData from "./ProviderNotificationData"
 
 
 
@@ -156,8 +156,7 @@ export default class OrderData extends ConnectToDatabase{
         try{
 
             await ConnectToDatabase.con(this.ORDER_TABLE).delete().where({ id })
-            await new NotificationData().saveNofitication(
-                providerId,
+            await new ProviderNotificationData().saveProviderNofitication(
                 `An order for ${product} was removed`
             )
 

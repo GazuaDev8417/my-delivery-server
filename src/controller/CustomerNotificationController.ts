@@ -26,7 +26,7 @@ export default class CustomerNotificationController{
         try{
             const customer = await this.services.authenticateUser(req)
             const notifications = await this.notificationBusiness.findCustomerNotifications(customer.id)
-
+            
             res.status(200).json(notifications)
         }catch(error:any){
             this.handleError(res, error)

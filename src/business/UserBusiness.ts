@@ -204,14 +204,15 @@ export default class UserBusiness{
     }    
 
 
-    public deleteUser = async (userId: string): Promise<void> => {
+    public deleteUser = async (user:UserModel): Promise<void> => {
+        const userId = user.id
         const requestedOrdersByUser = await this.userData.findActiveOrdersByClient(userId)
         
         if (requestedOrdersByUser.length > 0) {
             throw new AppError(403, "You have active orders. Please complete or cancel them before deleting your account.")
         }
 
-        await this.userData.deleteUser(userId)
+        await this.userData.deleteUser(user)
     }
 
 }

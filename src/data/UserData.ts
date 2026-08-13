@@ -1,6 +1,7 @@
 import ConnectToDatabase from "./Connexion"
 import { randomUUID as uuidv4 } from 'crypto'
 import User from "../model/User"
+import ProviderNotificationData from "./ProviderNotificationData"
 import { OrderModel, UserModel } from "../model/typesAndInterfaces"
 
 
@@ -21,6 +22,7 @@ export default class UserData extends ConnectToDatabase{
     protected USER_TABLE = 'users'
     protected ORDER_TABLE = 'orders'
     protected RESET_PASSWORD_TABLE = 'reset_password'
+    protected CUSTOMER_NOTIFICATION_TABLE = 'customer_notifications'
 
 //USER FIELD 
     public createUser = async (user: User): Promise<void> => {
@@ -31,7 +33,11 @@ export default class UserData extends ConnectToDatabase{
                 email: user.getEmail(),
                 phone: user.getPhone(),
                 password: user.getPassword()
-            })
+            }) 
+            
+            await new ProviderNotificationData().saveProviderNofitication(
+                `${user.getUsername()} has just signed up in My Delivery`
+            )
         } catch (error: any) {
             throw new Error(`Failed to create primary database user: ${error.message || error}`)
         }
@@ -176,14 +182,20 @@ export default class UserData extends ConnectToDatabase{
     }
         
 
-    public deleteUser = async (id: string): Promise<void> => {
+    public deleteUser = async (user:UserModel): Promise<void> => {
         const connection = ConnectToDatabase.con;
+        const userId = user.id
 
         try {
+            
             await connection.transaction(async (trx) => {
-                await trx(this.ORDER_TABLE).del().where({ client: id })
-                await trx(this.USER_TABLE).del().where({ id })
+                await trx(this.ORDER_TABLE).del().where({ client: userId })
+                await trx(this.USER_TABLE).del().where({ userId })
             })
+
+            await new ProviderNotificationData().saveProviderNofitication(
+                `${user.username} has just deleted his account`
+            )
         } catch (error: any) {
             throw new Error(`Failed to delete user and associated orders: ${error.message || error}`)
         }
