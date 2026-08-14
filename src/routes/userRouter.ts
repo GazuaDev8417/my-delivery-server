@@ -19,54 +19,6 @@ const userController = new UserController(userBusiness, services);
 // ==========================================
 // Authentication & Password Routes
 // ==========================================
-/**
- * @openapi
- * /users/signup:
- *   post:
- *     summary: Register a new client user
- *     tags:
- *       - Users
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - name
- *               - email
- *               - phone
- *               - password
- *             properties:
- *               name:
- *                 type: string
- *                 example: Flamarion França
- *               email:
- *                 type: string
- *                 format: email
- *                 example: flamarion@example.com
- *               phone:
- *                 type: string
- *                 description: Must be 11 digits starting with DD + 9
- *                 example: "71998887766"
- *               password:
- *                 type: string
- *                 format: password
- *                 minLength: 6
- *                 example: secret123
- *     responses:
- *       201:
- *         description: User registered successfully. Returns raw JWT bearer token string.
- *         content:
- *           application/json:
- *             schema:
- *               type: string
- *               example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *       400:
- *         description: Missing required fields or invalid email/phone/password format.
- *       409:
- *         description: Email already registered.
- */
 userRouter.post("/signup", userController.signup);
 
 /**
@@ -89,11 +41,11 @@ userRouter.post("/signup", userController.signup);
  *               email:
  *                 type: string
  *                 format: email
- *                 example: flamarion@example.com
+ *                 example: visitor1@email.com
  *               password:
  *                 type: string
  *                 format: password
- *                 example: secret123
+ *                 example: password123
  *     responses:
  *       200:
  *         description: Login successful. Returns raw JWT token string.
@@ -140,10 +92,10 @@ userRouter.post("/password/reset-request", userController.requestPasswordReset);
  *                     example: "a81f3b20-1e23-4c56-8a90-123456789abc"
  *                   username:
  *                     type: string
- *                     example: Flamarion França
+ *                     example: Visitor One
  *                   email:
  *                     type: string
- *                     example: flamarion@example.com
+ *                     example: visitor@email.com
  *                   phone:
  *                     type: string
  *                     example: "71998887766"

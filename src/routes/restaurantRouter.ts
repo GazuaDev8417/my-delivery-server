@@ -24,7 +24,7 @@ const restaurantController = new RestaurantController(restaurantBusiness, servic
 
 /**
  * @openapi
- * /restaurants/signup:
+ * /providers/signup:
  *   post:
  *     summary: Register a new merchant restaurant
  *     tags:
@@ -84,7 +84,7 @@ restaurantRouter.post("/signup", restaurantController.signupRestaurant);
 
 /**
  * @openapi
- * /restaurants/login:
+ * /providers/login:
  *   post:
  *     summary: Authenticate merchant & issue JWT token
  *     tags:
@@ -125,7 +125,7 @@ restaurantRouter.post("/password/reset-request", restaurantController.requestPas
 
 /**
  * @openapi
- * /restaurants/profile:
+ * /providers/profile:
  *   get:
  *     summary: Fetch authenticated merchant restaurant details
  *     tags:
@@ -179,7 +179,7 @@ restaurantRouter.get("/", restaurantController.getRestaurants);
 
 /**
  * @openapi
- * /restaurants/products:
+ * /providers/products:
  *   get:
  *     summary: Fetch all menu products for the authenticated merchant
  *     tags:
@@ -227,7 +227,7 @@ restaurantRouter.get("/clientside-products/:id", restaurantController.aAllProduc
 
 /**
  * @openapi
- * /restaurants/product/{id}:
+ * /providers/product/{id}:
  *   get:
  *     summary: Fetch a specific product by ID
  *     tags:
@@ -283,7 +283,7 @@ restaurantRouter.put("/product/:id", upload.single('image'), uploadToCloudinary 
 
 /**
  * @openapi
- * /restaurants/update:
+ * /providers/update:
  *   put:
  *     summary: Update merchant basic profile details
  *     tags:
@@ -331,7 +331,7 @@ restaurantRouter.patch("/password/update", restaurantController.updatePassword);
 
 /**
  * @openapi
- * /restaurants/product/{id}:
+ * /providers/product/{id}:
  *   delete:
  *     summary: Delete a product from the menu catalog
  *     tags:
