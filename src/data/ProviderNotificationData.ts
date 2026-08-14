@@ -76,8 +76,9 @@ export default class ProviderNotificationData extends ConnectToDatabase{
                     `${this.MATRIX_PROVIDER_NOTIFICATION_TABLE}.notification`,
                     `${this.MATRIX_PROVIDER_NOTIFICATION_TABLE}.created_at`,
                     `${this.PROVIDER_NOTIFICATION_TABLE}.is_read`,
-
-                ).where(`${this.PROVIDER_NOTIFICATION_TABLE}.user_id`, providerId)
+                ).where(
+                    `${this.PROVIDER_NOTIFICATION_TABLE}.user_id`, providerId
+                ).orderBy('created_at', 'desc')
 
             return notifications
         }catch(e:any){

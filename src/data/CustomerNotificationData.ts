@@ -82,9 +82,9 @@ export default class CustomerNotificationData extends ConnectToDatabase{
                     `${this.MATRIX_CUSTOMER_NOTIFICATION_TABLE}.created_at`,
                     `${this.MATRIX_CUSTOMER_NOTIFICATION_TABLE}.provider`,
                     `${this.CUSTOMER_NOTIFICATION_TABLE}.is_read`,
-
-                ).where(`${this.CUSTOMER_NOTIFICATION_TABLE}.customer_id`, customerId)
-                
+                ).where(
+                    `${this.CUSTOMER_NOTIFICATION_TABLE}.customer_id`, customerId
+                ).orderBy('created_at',  'desc')                
             return notifications
         }catch(e:any){
             throw new Error(`Failed to fetch notifications: ${e.message || e}`)
