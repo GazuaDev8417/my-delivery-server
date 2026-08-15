@@ -16,57 +16,6 @@ const orderController = new OrderController(orderBusiness, services);
 // Order Processing & Status Operations
 // ==========================================
 
-/**
- * @openapi
- * /orders:
- *   post:
- *     summary: Create a new order item for the authenticated customer
- *     tags:
- *       - Orders
- *     security:
- *       - UserAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - product
- *               - price
- *               - quantity
- *             properties:
- *               product:
- *                 type: string
- *                 example: Double Cheese Smash Burger
- *               price:
- *                 type: number
- *                 example: 29.9
- *               quantity:
- *                 type: integer
- *                 example: 2
- *               photoUrl:
- *                 type: string
- *                 example: https://res.cloudinary.com/demo/image/upload/v1/burger.jpg
- *               description:
- *                 type: string
- *                 example: No onions, extra pickle sauce
- *               providerId:
- *                 type: string
- *                 example: "b92f4c31-2f34-5d67-9b01-234567890def"
- *     responses:
- *       201:
- *         description: Order item added successfully.
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *               example: "'Double Cheese Smash Burger' was successfully added to your order list."
- *       400:
- *         description: Missing required order fields or invalid quantity.
- *       403:
- *         description: Active order already exists for this item.
- */
 orderRouter.post("/", orderController.createOrder);
 
 /**
@@ -77,7 +26,7 @@ orderRouter.post("/", orderController.createOrder);
  *     tags:
  *       - Orders
  *     security:
- *       - UserAuth: []
+ *       - CustomAuth: []
  *     responses:
  *       200:
  *         description: List of active orders.
@@ -99,14 +48,14 @@ orderRouter.get("/history", orderController.getFinishedOrders);
  * @openapi
  * /orders/all:
  *   get:
- *     summary: Fetch all orders for the authenticated merchant restaurant
+ *     summary: Fetch all orders for the authenticated merchant
  *     tags:
  *       - Orders
  *     security:
  *       - MerchantAuth: []
  *     responses:
  *       200:
- *         description: List of restaurant orders.
+ *         description: List of merchant orders.
  *         content:
  *           application/json:
  *             schema:
@@ -156,7 +105,7 @@ orderRouter.get("/:id", orderController.getOrderById);
 /**
  * @openapi
  * /orders/{id}/quantity:
- *   put:
+ *   patch:
  *     summary: Update the item quantity for an order
  *     tags:
  *       - Orders
@@ -269,34 +218,6 @@ orderRouter.patch("/:id/revert", orderController.revertOrderToRequested);
 orderRouter.delete("/history", orderController.clearOrderHistory);
 orderRouter.delete("/provider/:id", orderController.clearRequestedOrders);
 
-/**
- * @openapi
- * /orders/{id}:
- *   delete:
- *     summary: Delete an order record by ID
- *     tags:
- *       - Orders
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Order UUID
- *     responses:
- *       200:
- *         description: Order deleted successfully.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Order successfully deleted.
- *       404:
- *         description: Order not found.
- */
 orderRouter.delete("/:id", orderController.deleteOrder);
 
 // Payments integration

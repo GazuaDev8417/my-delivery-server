@@ -22,64 +22,6 @@ const restaurantController = new RestaurantController(restaurantBusiness, servic
 // Merchant Restaurant Authentication & Profile
 // ==========================================
 
-/**
- * @openapi
- * /providers/signup:
- *   post:
- *     summary: Register a new merchant restaurant
- *     tags:
- *       - Restaurants
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - name
- *               - address
- *               - phone
- *               - email
- *               - password
- *               - description
- *             properties:
- *               name:
- *                 type: string
- *                 example: Burger King Express
- *               address:
- *                 type: string
- *                 example: Av. Tancredo Neves, 1000
- *               phone:
- *                 type: string
- *                 example: "71999887766"
- *               email:
- *                 type: string
- *                 format: email
- *                 example: merchant@burgerking.com
- *               password:
- *                 type: string
- *                 format: password
- *                 example: SecretPass123!
- *               description:
- *                 type: string
- *                 example: Flame-broiled burgers and crispy fries delivered fast.
- *               logourl:
- *                 type: string
- *                 format: uri
- *                 example: https://res.cloudinary.com/demo/image/upload/v1/logo.png
- *     responses:
- *       201:
- *         description: Restaurant registered successfully. Returns raw JWT bearer token string.
- *         content:
- *           application/json:
- *             schema:
- *               type: string
- *               example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *       400:
- *         description: Missing required registration fields.
- *       409:
- *         description: Restaurant email is already registered.
- */
 restaurantRouter.post("/signup", restaurantController.signupRestaurant);
 
 /**
@@ -102,11 +44,11 @@ restaurantRouter.post("/signup", restaurantController.signupRestaurant);
  *               email:
  *                 type: string
  *                 format: email
- *                 example: merchant@burgerking.com
+ *                 example: admin1@example.com
  *               password:
  *                 type: string
  *                 format: password
- *                 example: SecretPass123!
+ *                 example: password123
  *     responses:
  *       200:
  *         description: Login successful. Returns raw Merchant JWT token.
@@ -145,19 +87,19 @@ restaurantRouter.post("/password/reset-request", restaurantController.requestPas
  *                   example: "b92f4c31-2f34-5d67-9b01-234567890def"
  *                 name:
  *                   type: string
- *                   example: Burger King Express
+ *                   example: Livri
  *                 email:
  *                   type: string
- *                   example: merchant@burgerking.com
+ *                   example: admin1@example.com
  *                 phone:
  *                   type: string
  *                   example: "71999887766"
  *                 address:
  *                   type: string
- *                   example: Av. Tancredo Neves, 1000
+ *                   example: Largo do Pelourinho
  *                 description:
  *                   type: string
- *                   example: Flame-broiled burgers and crispy fries delivered fast.
+ *                   example: Literary books in your hands and in your home.
  *                 logourl:
  *                   type: string
  *                   nullable: true
@@ -181,7 +123,7 @@ restaurantRouter.get("/", restaurantController.getRestaurants);
  * @openapi
  * /providers/products:
  *   get:
- *     summary: Fetch all menu products for the authenticated merchant
+ *     summary: Fetch all products list for the authenticated merchant
  *     tags:
  *       - Restaurants
  *     security:
@@ -201,16 +143,16 @@ restaurantRouter.get("/", restaurantController.getRestaurants);
  *                     example: "p1234567-89ab-cdef-0123-456789abcdef"
  *                   name:
  *                     type: string
- *                     example: Double Cheese Smash Burger
+ *                     example: Lord of the Rings
  *                   price:
  *                     type: number
- *                     example: 29.9
+ *                     example: 190.00
  *                   category:
  *                     type: string
- *                     example: Burgers
+ *                     example: Fantasy
  *                   description:
  *                     type: string
- *                     example: Two smash patties with melted cheddar and special sauce.
+ *                     example: Published in 1954–1955.
  *                   photoUrl:
  *                     type: string
  *                     example: https://res.cloudinary.com/demo/image/upload/v1/burger.jpg
@@ -254,16 +196,16 @@ restaurantRouter.get("/clientside-products/:id", restaurantController.aAllProduc
  *                   example: "p1234567-89ab-cdef-0123-456789abcdef"
  *                 name:
  *                   type: string
- *                   example: Double Cheese Smash Burger
+ *                   example: Lord of the Rings
  *                 price:
  *                   type: number
- *                   example: 29.9
+ *                   example: 190.00
  *                 category:
  *                   type: string
- *                   example: Burgers
+ *                   example: Fantasy
  *                 description:
  *                   type: string
- *                   example: Two smash patties with melted cheddar and special sauce.
+ *                   example: Published in 1954–1955.
  *                 photoUrl:
  *                   type: string
  *                   example: https://res.cloudinary.com/demo/image/upload/v1/burger.jpg
@@ -303,16 +245,16 @@ restaurantRouter.put("/product/:id", upload.single('image'), uploadToCloudinary 
  *             properties:
  *               name:
  *                 type: string
- *                 example: Burger King Express - Salvador
+ *                 example: Livri
  *               phone:
  *                 type: string
  *                 example: "71999887766"
  *               address:
  *                 type: string
- *                 example: Av. Tancredo Neves, 1005 - Store 12
+ *                 example: Largo do Pelourinho
  *     responses:
  *       200:
- *         description: Restaurant profile updated successfully.
+ *         description: Mercahnt profile updated successfully.
  *         content:
  *           application/json:
  *             schema:
@@ -320,7 +262,7 @@ restaurantRouter.put("/product/:id", upload.single('image'), uploadToCloudinary 
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Restaurant data updated successfully
+ *                   example: Merchant data updated successfully
  *       400:
  *         description: Missing required profile fields.
  *       401:
@@ -328,38 +270,5 @@ restaurantRouter.put("/product/:id", upload.single('image'), uploadToCloudinary 
  */
 restaurantRouter.put("/update", restaurantController.updateRestaurant);
 restaurantRouter.patch("/password/update", restaurantController.updatePassword);
-
-/**
- * @openapi
- * /providers/product/{id}:
- *   delete:
- *     summary: Delete a product from the menu catalog
- *     tags:
- *       - Restaurants
- *     security:
- *       - MerchantAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Product UUID to delete
- *     responses:
- *       200:
- *         description: Product deleted successfully.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "'Double Cheese Smash Burger' deleted successfully"
- *       401:
- *         description: Unauthorized - Merchant token missing or invalid.
- *       404:
- *         description: Product not found.
- */
 restaurantRouter.delete("/product/:id", restaurantController.deleteProduct);
 restaurantRouter.delete("/account", restaurantController.deleteRestaurantAccount);

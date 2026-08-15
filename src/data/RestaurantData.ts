@@ -88,7 +88,7 @@ export default class RestaurantData extends ConnectToDatabase{
                 .update({ name, address, phone })
                 .where({ id })
         } catch (error: any) {
-            throw new Error(`Failed to update restaurant data: ${error.message || error}`)
+            throw new Error(`Failed to update Merchant data: ${error.message || error}`)
         }
     }
 

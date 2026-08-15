@@ -92,7 +92,7 @@ export default class RestaurantController {
 
             await this.restaurantBusiness.updateRestaurant(restaurant.id, updateDTO);
 
-            res.status(200).json({ message: "Restaurant data updated successfully" });
+            res.status(200).json({ message: "Merchant data updated successfully" });
         } catch (error: any) {
             this.handleError(res, error);
         }

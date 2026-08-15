@@ -72,7 +72,7 @@ userRouter.post("/password/reset-request", userController.requestPasswordReset);
  * @openapi
  * /users:
  *   get:
- *     summary: Fetch all clients who ordered from the authenticated merchant
+ *     summary: Retrieve all customers who placed orders with the authenticated merchant.
  *     tags:
  *       - Users
  *     security:
@@ -128,10 +128,10 @@ userRouter.get("/", userController.getAllUsers);
  *                   example: "a81f3b20-1e23-4c56-8a90-123456789abc"
  *                 username:
  *                   type: string
- *                   example: Flamarion França
+ *                   example: Visitor ONe
  *                 email:
  *                   type: string
- *                   example: flamarion@example.com
+ *                   example: visitor1@email.com
  *                 phone:
  *                   type: string
  *                   example: "71998887766"
@@ -195,11 +195,11 @@ userRouter.get("/profile/:id", userController.getProfileByUser);
  *             properties:
  *               username:
  *                 type: string
- *                 example: Flamarion França
+ *                 example: Visitor One
  *               email:
  *                 type: string
  *                 format: email
- *                 example: flamarion@example.com
+ *                 example: visitor1@email.com
  *               phone:
  *                 type: string
  *                 example: "71998887766"
@@ -221,12 +221,13 @@ userRouter.get("/profile/:id", userController.getProfileByUser);
  *       404:
  *         description: User not found.
  */
+
 userRouter.put("/profile", userController.updateUser);
 
 /**
  * @openapi
  * /users/address:
- *   post:
+ *   put:
  *     summary: Register or update client shipping address
  *     tags:
  *       - Users
@@ -247,13 +248,13 @@ userRouter.put("/profile", userController.updateUser);
  *             properties:
  *               street:
  *                 type: string
- *                 example: Av. Sete de Setembro
+ *                 example: Largo do Pelourinho
  *               cep:
  *                 type: string
- *                 example: "40000000"
+ *                 example: "40026280"
  *               neighbourhood:
  *                 type: string
- *                 example: Barra
+ *                 example: Centro Histórico
  *               city:
  *                 type: string
  *                 example: Salvador
@@ -266,7 +267,7 @@ userRouter.put("/profile", userController.updateUser);
  *                 description: Required if complement is omitted
  *               complement:
  *                 type: string
- *                 example: Apt 201
+ *                 example: Near to Praça da Sé
  *                 description: Required if number is omitted
  *     responses:
  *       200:
@@ -286,32 +287,6 @@ userRouter.put("/profile", userController.updateUser);
  */
 userRouter.put("/address", userController.registerAddress);
 
-
 userRouter.patch("/password/update", userController.updatePassword);
 
-/**
- * @openapi
- * /users/account:
- *   delete:
- *     summary: Delete user account and associated history
- *     tags:
- *       - Users
- *     security:
- *       - CustomAuth: []
- *     responses:
- *       200:
- *         description: Account and associated data deleted successfully.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: User account and all its data was deleted successfully
- *       401:
- *         description: Unauthorized.
- *       403:
- *         description: Forbidden - User has active orders that must be finished or canceled first.
- */
 userRouter.delete("/account", userController.deleteUser);

@@ -30,7 +30,11 @@ export default class StatisticsData extends ConnectToDatabase{
                 ConnectToDatabase.con(this.ORDER_TABLE).where('provider', providerId).countDistinct('client as count'),
                 ConnectToDatabase.con(this.ORDER_TABLE).where('provider', providerId).count('id as count'),
                 ConnectToDatabase.con(this.PRODUCT_TABLE).where('provider', providerId).count('id as count'),
-                ConnectToDatabase.con(this.ORDER_TABLE).where('provider', providerId).sum('total as sum')
+
+                ConnectToDatabase.con(this.ORDER_TABLE)
+                    .where('provider', providerId)
+                    .where('state', 'FINISHED')
+                    .sum('total as sum')
             ])
             //specify from what provider this revenue comes
             return [
@@ -110,10 +114,15 @@ export default class StatisticsData extends ConnectToDatabase{
             ] = await Promise.all([
                 ConnectToDatabase.con(this.ORDER_TABLE).where('provider', providerId).countDistinct('client as count'),
                 ConnectToDatabase.con(this.ORDER_TABLE).where('provider', providerId).count('id as count'),
-                ConnectToDatabase.con(this.ORDER_TABLE).where('provider', providerId).sum('total as sum'),
+
+                ConnectToDatabase.con(this.ORDER_TABLE)
+                    .where('provider', providerId)
+                    .where('state', 'FINISHED')
+                    .sum('total as sum'),
                 
                 ConnectToDatabase.con(this.ORDER_TABLE)
                     .where('provider', providerId)
+                    .where('state', 'FINISHED')
                     .where('moment', '>', startCurrrentMonth)
                     .count('id as count'),
                 

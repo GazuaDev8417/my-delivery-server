@@ -9,11 +9,15 @@ const options: swaggerJsdoc.Options = {
         info: {
             title: 'My Delivery API Server',
             version: '1.0.0',
-            description: 'Central API service powering the My Delivery Consumer App, Merchant Provider Hub, and SaaS Dashboard.',
+            description: [
+    'Central API service powering the My Delivery Consumer App, Merchant Provider, and SaaS Dashboard.',
+    '',
+    '> **⚠️ Note:** This is a demo/portfolio project. Some routes (such as \`DELETE\` and \`signup\`) were intentionally omitted or restricted, since they would allow creating or deleting real users/data in a publicly accessible demo environment'
+            ].join('\n'),
             contact: {
                 name: 'Flamarion França',
                 url: 'https://portfolio-vtu0.onrender.com'
-            }
+            },            
         },
         servers: [
             {
@@ -31,13 +35,13 @@ const options: swaggerJsdoc.Options = {
                     type: 'http',
                     scheme: 'bearer',
                     bearerFormat: 'JWT',
-                    description: 'Enter your Customer Bearer JWT token'
+                    description: 'Enter your Customer Bearer JWT token without quotes.'
                 },
                 MerchantAuth: {
                     type: 'http',
                     scheme: 'bearer',
                     bearerFormat: 'JWT',
-                    description: 'Enter your Merchant Bearer JWT token'
+                    description: 'Enter your Merchant Bearer JWT token without quotes.'
                 }
             }
         }

@@ -66,7 +66,6 @@ const swaggerUiOptions:swaggerUi.SwaggerUiOptions = {
 
 app.use('/api-docs', swaggerUi.serve);
 app.get('/api-docs', swaggerUi.setup(swaggerSpec, swaggerUiOptions))
-
 app.get('/', (req, res) => {
     res.redirect('/api-docs')
 })
