@@ -70,6 +70,10 @@ export default class RestaurantBusiness{
             throw new AppError(400, "Missing required registration fields")
         }
 
+        if(!this.EMAIL_REGEX.test(email) || !this.PHONE_REGEX.test(phone)){
+            throw new AppError(400, 'Email or phone invalid')
+        }
+
         const existingRestaurant = await this.restaurantData.findRestaurantByEmail(email)
         if(existingRestaurant){
             throw new AppError(409, `This email is already registered`)
