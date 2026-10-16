@@ -7,6 +7,7 @@ import RestaurantData from "../data/RestaurantData";
 import Services from "../services/Authentication";
 import TokenService from "../services/TokenService";
 import EmailService from "../services/EmailService";
+import { requireSignupEnabled } from "../middleware/signupGate";
 
 export const restaurantRouter = Router();
 
@@ -22,7 +23,7 @@ const restaurantController = new RestaurantController(restaurantBusiness, servic
 // Merchant Restaurant Authentication & Profile
 // ==========================================
 
-restaurantRouter.post("/signup", restaurantController.signupRestaurant);
+restaurantRouter.post("/signup", requireSignupEnabled("ENABLE_PROVIDER_SIGNUP"), restaurantController.signupRestaurant);
 
 /**
  * @openapi
