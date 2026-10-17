@@ -5,7 +5,7 @@ import UserData from "../data/UserData";
 import Services from "../services/Authentication";
 import TokenService from "../services/TokenService";
 import EmailService from "../services/EmailService";
-import { requireSignupEnabled } from "../middleware/signupGate";
+import { requireSignupEnabled, requireDeleteAccountEnabled } from "../middleware/signupGate";
 
 export const userRouter = Router();
 
@@ -290,4 +290,4 @@ userRouter.put("/address", userController.registerAddress);
 
 userRouter.patch("/password/update", userController.updatePassword);
 
-userRouter.delete("/account", userController.deleteUser);
+userRouter.delete("/account", requireDeleteAccountEnabled("ENABLE_CUSTOMER_DELETE"), userController.deleteUser);

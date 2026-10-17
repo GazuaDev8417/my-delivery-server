@@ -1,13 +1,27 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import { upload, uploadToCloudinary } from "../config/multer";
-//import { uploadLocal } from "../config/duplicateUpload";
+import { uploadLocal, replicateUpload } from "../config/duplicateUpload";
 import RestaurantController from "../controller/RestaurantController";
 import RestaurantBusiness from "../business/RestaurantBusiness";
 import RestaurantData from "../data/RestaurantData";
 import Services from "../services/Authentication";
 import TokenService from "../services/TokenService";
 import EmailService from "../services/EmailService";
-import { requireSignupEnabled } from "../middleware/signupGate";
+import { requireSignupEnabled, requireDeleteAccountEnabled } from "../middleware/signupGate";
+
+
+//Middlware list
+const uploadDriver = process.env.UPLOAD_DRIVER
+
+if(uploadDriver !== 'local' && uploadDriver !== 'cloudinary'){
+    throw new Error("UPLOAD_DRIVER must to be 'local' or 'cloudinary'")
+}
+
+const uploadMiddleware: RequestHandler[] = 
+    process.env.UPLOAD_DRIVER === 'cloudinary'
+        ? [upload.single('image'), uploadToCloudinary]
+        : [uploadLocal.single('image'), replicateUpload]
+
 
 export const restaurantRouter = Router();
 
@@ -219,10 +233,8 @@ restaurantRouter.get("/clientside-products/:id", restaurantController.aAllProduc
  *         description: Product not found.
  */
 restaurantRouter.get("/product/:id", restaurantController.getProductById);
-restaurantRouter.post("/product",  upload.single('image'), uploadToCloudinary , restaurantController.insertProduct);
-restaurantRouter.put("/product/:id", upload.single('image'), uploadToCloudinary , restaurantController.updateProduct);
-// restaurantRouter.post("/product",  uploadLocal.single('image'), restaurantController.insertProduct);
-// restaurantRouter.put("/product/:id", uploadLocal.single('image'), restaurantController.updateProduct);
+restaurantRouter.post("/product",  ...uploadMiddleware, restaurantController.insertProduct);
+restaurantRouter.put("/product/:id", ...uploadMiddleware, restaurantController.updateProduct);
 
 /**
  * @openapi
@@ -272,4 +284,4 @@ restaurantRouter.put("/product/:id", upload.single('image'), uploadToCloudinary 
 restaurantRouter.put("/update", restaurantController.updateRestaurant);
 restaurantRouter.patch("/password/update", restaurantController.updatePassword);
 restaurantRouter.delete("/product/:id", restaurantController.deleteProduct);
-restaurantRouter.delete("/account", restaurantController.deleteRestaurantAccount);
+restaurantRouter.delete("/account", requireDeleteAccountEnabled("ENABLE_PROVIDER_DELETE"), restaurantController.deleteRestaurantAccount);

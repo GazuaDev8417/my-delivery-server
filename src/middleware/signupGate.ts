@@ -14,3 +14,20 @@ export const requireSignupEnabled = (flag: SignupFlag): RequestHandler => {
     next();
   };
 };
+
+
+type DeleteFlag =
+  | "ENABLE_CUSTOMER_DELETE"
+  | "ENABLE_PROVIDER_DELETE"
+
+
+export const requireDeleteAccountEnabled = (flag: DeleteFlag): RequestHandler => {
+  return (_req, res, next) => {
+    if (process.env[flag] !== "true") {
+      res.status(403).json({ message: "A ação de deletar conta está desativado." });
+      return;
+    }
+
+    next();
+  };
+}

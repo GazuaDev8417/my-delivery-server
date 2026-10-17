@@ -10,7 +10,7 @@ export default class Product extends ConnectToDatabase{
         private description:string,
         private id:string,
         private name:string,
-        private photoUrl:string,
+        private photoUrl:string | null,
         private price:number,
         private stock:number,
         private provider:string,

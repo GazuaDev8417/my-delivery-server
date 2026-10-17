@@ -139,8 +139,9 @@ export default class RestaurantController {
         try {
             const reataurant = await this.services.authenticateRestaurant(req);
             const createProductDTO: CreateAndUpdateProductDTO = req.body;
-
-            await this.restaurantBusiness.insertProduct(createProductDTO, reataurant.id);
+            const image =  req.file?.filename ?? req.body.image ?? null
+            
+            await this.restaurantBusiness.insertProduct(createProductDTO, image, reataurant.id);
 
             res.status(201).json({ message: "Product registered successfully!" });
         } catch (error: any) {
@@ -152,8 +153,11 @@ export default class RestaurantController {
         try {
             await this.services.authenticateRestaurant(req);
             const { id } = req.params 
-            const updateDTO: CreateAndUpdateProductDTO = req.body
-
+            const updateDTO: CreateAndUpdateProductDTO = {
+                ...req.body,
+                image: req.file?.filename ?? req.body.image ?? ''
+            }
+            
             await this.restaurantBusiness.updateProduct(id as string, updateDTO);
 
             res.status(200).json({ message: "Product updated successfully!" });

@@ -208,8 +208,8 @@ export default class RestaurantBusiness{
     }
 
 // ====================== PRODUCTS =============================== 
-    public insertProduct = async (productDTO: CreateAndUpdateProductDTO, providerId:string): Promise<void> => {
-        const { category, description, name, price, image, stock } = productDTO
+    public insertProduct = async (productDTO: CreateAndUpdateProductDTO, image:string | null, providerId:string): Promise<void> => {
+        const { category, description, name, price, stock } = productDTO
         const stockNumber = Number(stock)
         const status = stockNumber >= 150 ? 'Active' : stockNumber > 0 ? 'Low Stock' : 'Inactive'
 
@@ -228,8 +228,8 @@ export default class RestaurantBusiness{
         const existingProduct = await this.restaurantData.findProduct(name, category, description)
         if (existingProduct) {
             throw new AppError(403, "This product is already registered")
-        }        
-
+        }    
+        
         const id = this.services.idGenerator()
         const product = new Product(category, description, id, name, image, price, stock, providerId, status)
         

@@ -4,6 +4,7 @@ config()
 import cors from 'cors'
 
 
+
  
 
 
@@ -23,6 +24,7 @@ app.use(cors({
     },
     credentials: true
 }))
+
 
 
 if(process.env.NODE_ENV !== 'production'){
