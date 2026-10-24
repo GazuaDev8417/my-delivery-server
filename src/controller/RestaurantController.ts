@@ -33,7 +33,8 @@ export default class RestaurantController {
     public signupRestaurant = async (req: Request, res: Response): Promise<void> => {
         try {
             const signupDTO: SignupRestaurantDTO = req.body;
-            const token = await this.restaurantBusiness.signupRestaurant(signupDTO);
+            const image = req.file?.originalname || null
+            const token = await this.restaurantBusiness.signupRestaurant(signupDTO, image);
 
             res.status(201).json(token);
         } catch (error: any) {

@@ -2,21 +2,46 @@ import ConnectToDatabase from "./Connexion"
 import Orders from "../model/Order"
 import { OrderModel, OrdersByMonthModel } from "../model/typesAndInterfaces"
 import ProviderNotificationData from "./ProviderNotificationData"
+import StockConflictError from "../errors/StockConflictError"
+import { AppError } from "../services/Authentication"
 
 
 
 export default class OrderData extends ConnectToDatabase{
     protected ORDER_TABLE = 'orders'
     protected USER_TABLE = 'users'
+    protected PRODUCT_TABLE = 'products'
 
     
-    public createOrder = async(order:Orders):Promise<void>=>{
-        try{
+    public createOrder = async(order:Orders, productId:string, providerId:string, quantity:number):Promise<void>=>{
+        if(!Number.isInteger(quantity) || quantity <= 0){
+            throw new AppError(400, 'Quantity must be a positive integer')
+        }
 
-            await order.save()
+        try{
+            await ConnectToDatabase.con.transaction(async(trx)=>{
+                const updatedProducts = await trx(this.PRODUCT_TABLE)
+                    .where({
+                        id: productId,
+                        provider: providerId
+                    })
+                    .where('stock', '>=', quantity)
+                    .decrement('stock', quantity)
+                    .returning('id')
+
+                if(updatedProducts.length !== 1){
+                    throw new StockConflictError()
+                }
+
+                await order.save(trx)
+            })
 
         }catch(e:any){
-            throw new Error(`Error creating order: ${e.message || e}`)
+            if(e instanceof StockConflictError){
+                throw e
+            }
+            const message = e instanceof Error ? e.message : String(e)
+            throw new Error(`Error creating order: ${message}`)
         }
     }
 
@@ -153,36 +178,125 @@ export default class OrderData extends ConnectToDatabase{
         
     
     public deleteOrder = async(order:OrderModel):Promise<void>=>{
+        let deleteOrder: OrderModel
+
         try{
+            deleteOrder = await ConnectToDatabase.con.transaction(async (trx)=>{
+                const currentOrder: OrderModel | undefined = await trx(this.ORDER_TABLE)
+                    .where({ id: order.id })
+                    .forUpdate()
+                    .first()
 
-            await ConnectToDatabase.con(this.ORDER_TABLE).delete().where({ id: order.id })
+                if(!currentOrder){
+                    throw new AppError(404, 'Order not found')
+                }
+
+                if(currentOrder.state === 'REQUESTED'){
+                    const restoredProducts = await trx(this.PRODUCT_TABLE)
+                        .where({
+                            id: currentOrder.productid,
+                            provider: currentOrder.provider
+                        })
+                        .increment('stock', currentOrder.quantity)
+                        .returning('id')
+
+                    if(restoredProducts.length !== 1){
+                        throw new Error('The product stock could not be restored.')
+                    }
+                }
+
+                await trx(this.ORDER_TABLE)
+                    .where({ id: currentOrder.id })
+                    .delete()
+
+                return currentOrder
+            })
+        }catch(e:unknown){
+            if(e instanceof AppError){
+                throw e
+            }
+
+            const message = e instanceof Error ? e.message : String(e)
+            throw new Error(`Error deleting order: ${message}`)
+        }
+
+        try{
             await new ProviderNotificationData().saveProviderNofitication(
-                `An order for ${order.product} was removed`,
-                order.provider
+                `An order for ${deleteOrder.product} was removed`,
+                deleteOrder.provider
             )
-
-        }catch(e:any){
-            throw new Error(`Error deleting order: ${e.message || e}`)
+        }catch(e:unknown){
+            console.error(
+                `Order ${deleteOrder.id} was deleted, but the notification to the provider ${deleteOrder.provider} failed:`,
+                e
+            )
         }
 
     }
 
 
     public updateOrderQuantity = async(quantity:number, id:string):Promise<void>=>{
-        try{
-            
-            const order = await this.findOrderById(id)
-            if(!order){
-                throw new Error('Order not found')
-            }
-            
-            await ConnectToDatabase.con(this.ORDER_TABLE).update({
-              quantity,
-              total: quantity * order.price
-            }).where({ id })
+        if(!Number.isInteger(quantity) || quantity <= 0){
+            throw new AppError(400, 'Quantity must be a positive integer')
+        }
 
-        }catch(e:any){
-            throw new Error(`Error updating order quantity: ${e.message || e}`)
+        try{
+            await ConnectToDatabase.con.transaction(async(trx)=>{
+                const order:OrderModel = await trx(this.ORDER_TABLE)
+                    .where({ id })
+                    .forUpdate()
+                    .first()
+
+                if(!order){
+                    throw new AppError(404, 'Order not found')
+                }
+
+                if(order.state !== 'REQUESTED'){
+                    throw new AppError(409, 'Only requested orders can be updated.')
+                }
+
+                const difference = quantity - order.quantity
+
+                if(difference > 0){
+                    const updated = await trx(this.PRODUCT_TABLE)
+                        .where({
+                            id: order.productid,
+                            provider: order.provider
+                        })
+                        .where('stock', '>=', difference)
+                        .decrement('stock', difference)
+                        .returning('id')
+
+                    if(updated.length !== 1){
+                        throw new StockConflictError()
+                    }
+                }else if(difference < 0){
+                    const restoredProducts = await trx(this.PRODUCT_TABLE)
+                        .where({
+                            id: order.productid,
+                            provider: order.provider
+                        })
+                        .increment('stock', Math.abs(difference))
+                        .returning('id')
+
+                    if(restoredProducts.length !== 1){
+                        throw new Error('The stock could not be restored: product from the order was not found.')
+                    }
+                }
+
+                await trx(this.ORDER_TABLE)
+                    .where({ id })
+                    .update({
+                        quantity: quantity,
+                        total: quantity * order.price
+                    })
+            })
+        }catch(e:unknown){
+            if(e instanceof AppError || e instanceof StockConflictError){
+                throw e
+            }
+            const message = e instanceof Error ? e.message : String(e)
+            throw new Error(`Error updating quantity: ${message}`)
         }
     }
 
@@ -243,15 +357,48 @@ export default class OrderData extends ConnectToDatabase{
     
     public deleteRequestedOrdersByProvider = async(client:string, provider:string):Promise<void>=>{
         try{
+            await ConnectToDatabase.con.transaction(async(trx)=>{
+                const requestedOrders = await trx(this.ORDER_TABLE)
+                    .select('id', 'productid', 'quantity')
+                    .where({
+                        client,
+                        provider,
+                        state: 'REQUESTED'
+                    })
+                    .forUpdate()
 
-            await ConnectToDatabase.con(this.ORDER_TABLE).delete().where({
-                client,
-                restaurant: provider,
-                state: 'REQUESTED'
+                if(requestedOrders.length === 0) return
+
+                const quantityByProduct = new Map<string, number>()
+
+                for(const order of requestedOrders){
+                    const previousQuantity = quantityByProduct.get(order.productid) ?? 0
+                    quantityByProduct.set(
+                        order.productid,
+                        previousQuantity + order.quantity
+                    )
+                }
+
+                for(const [productId, quantity] of quantityByProduct){
+                    const restoredProducts = await trx(this.PRODUCT_TABLE)
+                        .where({ id: productId, provider })
+                        .increment('stock', quantity)
+                        .returning('id')
+
+                    if(restoredProducts.length !== 1){
+                        throw new Error(`The stock for product ${productId} could not be restored.`)
+                    }
+                }
+
+                const orderIds = requestedOrders.map((order) => order.id)
+
+                await trx(this.ORDER_TABLE)
+                    .whereIn('id', orderIds)
+                    .delete()
             })
-
         }catch(e:any){
-            throw new Error(`Error clearing provider requested orders: ${e.message || e}`)
+            const message = e instanceof Error ? e.message : String(e)
+            throw new Error(`Error clearing requested orders from provider: ${message}`)
         }
     }
    

@@ -63,8 +63,8 @@ export default class RestaurantBusiness{
     ){}
 
     
-    public signupRestaurant = async(signupDTO:SignupRestaurantDTO):Promise<string>=>{
-        const { name, address , phone, email, logourl, password, description } = signupDTO
+    public signupRestaurant = async(signupDTO:SignupRestaurantDTO, image:string | null):Promise<string>=>{
+        const { name, address , phone, email, password, description } = signupDTO
 
         if (!name || !address || !phone || !email || !password || !description) {
             throw new AppError(400, "Missing required registration fields")
@@ -75,8 +75,10 @@ export default class RestaurantBusiness{
         }
 
         const existingRestaurant = await this.restaurantData.findRestaurantByEmail(email)
-        if(existingRestaurant){
-            throw new AppError(409, `This email is already registered`)
+        const existingPhone = await this.restaurantData.findRestaurantByPhone(phone)
+
+        if(existingRestaurant || existingPhone){
+            throw new AppError(409, `This email or phone is already registered`)
         }
         
         
@@ -89,7 +91,7 @@ export default class RestaurantBusiness{
             phone,
             description, 
             id, 
-            logourl, 
+            image, 
             name,
             email,
             hashedPassword,

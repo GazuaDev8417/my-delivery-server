@@ -1,5 +1,6 @@
 import ConnectToDatabase from "../data/Connexion"
 import ProviderNotificationData from "../data/ProviderNotificationData"
+import type { Knex } from 'knex'
 
 
 
@@ -18,12 +19,13 @@ export default class Order extends ConnectToDatabase{
         private state:string,
         private address:string,
         private description:string,
-        private provider:string
+        private provider:string,
+        private productid:string
     ){ super() }
 
-    save = async():Promise<void>=>{
+    save = async(trx:Knex.Transaction):Promise<void>=>{
         try{
-            await ConnectToDatabase.con(this.ORDERS_TABLE).insert({
+            await trx(this.ORDERS_TABLE).insert({
                 id: this.id,
                 product: this.product ,
                 price: this.price,
@@ -35,7 +37,8 @@ export default class Order extends ConnectToDatabase{
                 state: this.state,
                 address: this.address,
                 description: this.description,
-                provider: this.provider
+                provider: this.provider,
+                productid: this.productid
             })
 
             await new ProviderNotificationData().saveProviderNofitication(

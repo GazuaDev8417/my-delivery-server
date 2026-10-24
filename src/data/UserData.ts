@@ -98,6 +98,19 @@ export default class UserData extends ConnectToDatabase{
     }
 
 
+    public findByPhone = async (phone: string): Promise<UserModel | undefined> => {
+        try {
+            const [user] = await ConnectToDatabase.con(this.USER_TABLE)
+                .select('phone')
+                .where({ phone })
+
+            return user
+        } catch (error: any) {
+            throw new Error(`Failed to fetch user by phone: ${error.message || error}`)
+        }
+    }
+
+
     public saveResetToken = async (user_id: string, token: string): Promise<void> => {
         try {
             await ConnectToDatabase.con(this.RESET_PASSWORD_TABLE)

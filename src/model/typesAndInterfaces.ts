@@ -47,6 +47,7 @@ export interface OrderModel{
     client:string
     state: 'REQUESTED' | 'FINISHED'
     provider:string
+    productid:string
 }
 
 export interface OrdersByMonthModel {

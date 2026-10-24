@@ -20,6 +20,7 @@ export interface CreateOrderDTO{
     photoUrl: string
     description: string
     providerId: string
+    productId: string
 
 }
 
@@ -38,10 +39,14 @@ export default class OrderBusiness{
     ){}
 
     public createOrder = async(user:UserModel, orderDataDTO:CreateOrderDTO):Promise<void>=>{
-        const { product, price, quantity, photoUrl, description, providerId } = orderDataDTO
+        const { product, price, quantity, photoUrl, description, providerId, productId } = orderDataDTO
 
         if (!product || !price || !quantity) {
             throw new AppError(400, "Missing required order fields");
+        }
+
+        if(!Number.isInteger(quantity) || quantity <= 0){
+            throw new AppError(400, 'Quantity must be a positive integer')
         }
         
         const address = `${user.street} ${user.number}, ${user.neighbourhood} ${user.city} - ${user.state}`
@@ -63,10 +68,11 @@ export default class OrderBusiness{
             'REQUESTED',
             address,
             description,
-            providerId
+            providerId,
+            productId
         )
 
-        await this.orderData.createOrder(order)
+        await this.orderData.createOrder(order, productId, providerId, quantity)
     }
     
 

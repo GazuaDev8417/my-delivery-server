@@ -77,6 +77,20 @@ export default class RestaurantData extends ConnectToDatabase{
     }
 
 
+    public findRestaurantByPhone = async(phone:string):Promise<RestaurantModel>=>{
+        try{
+
+            const [restaurant] = await ConnectToDatabase.con(this.RESTAURANT_TABLE)
+                .select('phone')
+                .where({ phone })
+
+            return restaurant
+        }catch(e:any){
+            throw new Error(`Error fetching restaurant by phone: ${e.message || e}`)
+        }
+    }
+
+
     public updateRestaurant = async (
         id: string, 
         name: string, 

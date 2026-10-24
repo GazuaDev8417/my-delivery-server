@@ -138,6 +138,7 @@ export default class DatabaseManager extends ConnectToDatabase{
                     table.text('description').notNullable()
                     table.string('payment', 10)
                     table.string('provider', 255).notNullable()
+                    table.string('productid', 255).notNullable()
                 })
 
                 console.log(`${this.ORDER_TABLE} table was created successfully`)

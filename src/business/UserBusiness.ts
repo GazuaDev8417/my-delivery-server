@@ -68,8 +68,10 @@ export default class UserBusiness{
         }
 
         const registeredUser = await this.userData.findByEmail(email)
-        if(registeredUser){
-            throw new AppError(409, "This email is already registered. Please use a different email.")
+        const registeredPhone = await this.userData.findByPhone(phone)
+
+        if(registeredUser || registeredPhone){
+            throw new AppError(409, "This email or phone is already registered.")
         }
         const id = this.services.idGenerator()
         const hashedPassword = this.services.hashPassword(password)

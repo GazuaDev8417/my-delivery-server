@@ -10,7 +10,7 @@ export default class Restaurant extends ConnectToDatabase{
         private phone:string,
         private description:string,
         private id:string,
-        private logourl:string,
+        private logourl:string | null,
         private name:string,
         private email:string,
         private password:string,

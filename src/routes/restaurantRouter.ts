@@ -1,6 +1,7 @@
 import { Router, type RequestHandler } from "express";
 import { upload, uploadToCloudinary } from "../config/multer";
 import { uploadLocal, replicateUpload } from "../config/duplicateUpload";
+import { uploadSignupImage, replicatedSignupUpload } from "../config/singupImage";
 import RestaurantController from "../controller/RestaurantController";
 import RestaurantBusiness from "../business/RestaurantBusiness";
 import RestaurantData from "../data/RestaurantData";
@@ -37,7 +38,7 @@ const restaurantController = new RestaurantController(restaurantBusiness, servic
 // Merchant Restaurant Authentication & Profile
 // ==========================================
 
-restaurantRouter.post("/signup", requireSignupEnabled("ENABLE_PROVIDER_SIGNUP"), restaurantController.signupRestaurant);
+restaurantRouter.post("/signup", uploadSignupImage.single('image'), replicatedSignupUpload, /*requireSignupEnabled("ENABLE_PROVIDER_SIGNUP"),*/ restaurantController.signupRestaurant);
 
 /**
  * @openapi
