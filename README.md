@@ -1,56 +1,88 @@
-# ⚡ My Delivery Server — Multi-Tenant Backend API Service
+# My Delivery Server
 
-[![Portfolio](https://img.shields.io/badge/Author-Flamarion_França-007acc?style=for-the-badge&logo=render)](https://portfolio-vtu0.onrender.com)
-[![Language](https://img.shields.io/badge/Node.js-TypeScript-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![Database](https://img.shields.io/badge/Database-Knex.js%20%26%20PostgreSQL-orange?style=for-the-badge&logo=postgresql)](https://knexjs.org/)
-[![API Docs](https://img.shields.io/badge/API_Docs-Swagger-85ea2d?style=for-the-badge&logo=swagger&logoColor=black)](https://my-delivery-server-nine.vercel.app/api-docs/)
+The central REST API for the My Delivery ecosystem. The server connects the customer app, the store dashboard, and the SaaS Dashboard, sharing authentication, store and product data, orders, notifications, and statistics.
 
-> **Ecosystem Core:** *My Delivery Server* is the centralized RESTful API powering the entire multi-tenant SaaS ecosystem. It coordinates data persistence, transaction execution, security routines, and real-time event notifications connecting **[My Delivery](https://my-delivery-silk.vercel.app)** (Consumer Web App), **[My Delivery Provider](https://my-delivery-provider.vercel.app)** (Merchant Operational Dashboard), and the **[SaaS Control Panel](https://dashboard-project-nu-one.vercel.app/)** (Business Intelligence Engine).
+## The My Delivery ecosystem
 
----
+- **My Delivery** — the customer app for browsing stores, placing orders, and following the purchase flow.
+- **My Delivery Provider** — the store-facing app for receiving and managing orders and maintaining products and store details.
+- **SaaS Dashboard** — the management and monitoring dashboard for the ecosystem.
+- **My Delivery Server** — the API and integration layer between the applications and external services.
 
-## 📖 API Documentation
+The web apps send their requests to this API. The server validates authentication, applies business rules, and reads or updates shared data, allowing stores to handle customer orders.
 
-Explore endpoints, schema definitions, authentication strategies, and request structures live in the interactive OpenAPI/Swagger console:
+## API features
 
-* 📄 **Live Swagger Documentation:** [https://my-delivery-server-nine.vercel.app/api-docs/](https://my-delivery-server-nine.vercel.app/api-docs/)
-* 💼 **Developer Portfolio:** [https://portfolio-vtu0.onrender.com](https://portfolio-vtu0.onrender.com)
+- Customer and store sign-up, authentication, profiles, addresses, and password recovery.
+- Store, category, and product discovery and management, including images and stock.
+- Order creation and retrieval, status updates, and payment status checks.
+- Mercado Pago integration for payment processing and status checks.
+- Customer and store notifications, including read-status management.
+- Statistics and revenue endpoints.
+- Interactive endpoint documentation with Swagger/OpenAPI.
 
----
+## Tech stack
 
-## 🌟 Technical Highlights & Engineering Decisions
+- Node.js, Express 5, and TypeScript
+- Knex.js with PostgreSQL (`pg`)
+- JWT and bcryptjs for authentication and password hashing
+- Multer for uploads, with Cloudinary as an optional image storage provider
+- Nodemailer for password recovery emails
+- Swagger UI and `swagger-jsdoc` for API documentation
 
-Architected with **Node.js**, **Express**, **TypeScript**, **Knex.js**, and **PostgreSQL (Neon Tech)**, this server implements resilient backend patterns focused on operational data integrity, security, and real-time synchronization:
+## API documentation
 
-* **🔔 Integrated Real-Time Notification System:** Centralized event dispatching where incoming consumer orders on *My Delivery* instantly trigger alerts on the provider dashboard, while store catalog updates dynamically push notifications to registered customers.
-* **🛡️ Security & Authentication Layer:** Stateless JWT authentication paired with `bcrypt.js` password hashing to enforce role-based access control across consumer, provider, and administrative routes.
-* **💳 Dynamic Payment Gateway Integration:** Server-side webhooks and payment processing using `@mercadopago/sdk-react` and API integration, featuring automated background transaction state polling.
-* **📂 Media Management Pipeline:** Direct file upload parsing powered by **Multer** for reliable store branding and product image processing.
-* **🗄️ Relational Database Management:** Configured with **Knex.js** query builder over serverless **PostgreSQL (Neon Tech)**, utilizing migration pipelines and database seeding routines for 100% cross-application data consistency.
-* **📧 Automated Password Recovery:** Integrated transactional email delivery using **Nodemailer** for secure password reset workflows.
+- [Production Swagger documentation](https://my-delivery-server-nine.vercel.app/api-docs/)
+- Local server: `http://localhost:3003/api-docs/`
 
----
+The root path `/` redirects to the API documentation.
 
-## 🏛️ Architecture & System Data Flow
+## Run locally
 
-```text
- ┌─────────────────────────┐          ┌─────────────────────────┐
- │   My Delivery (Client)  │          │   My Delivery Provider  │
- │  (Order & Checkout UI)  │          │  (Merchant Operations)  │
- └────────────┬────────────┘          └────────────┬────────────┘
-              │                                    │
-              │ 1. Orders & Menu Queries           │ 2. Store Management & Fulfillment
-              └─────────────────┬──────────────────┘
-                                │
-                                ▼
-                 ┌──────────────────────────────┐
-                 │    My Delivery Server        │
-                 │   (Node / Express / Knex)    │
-                 └──────────────┬───────────────┘
-                                │
-          ┌─────────────────────┼─────────────────────┐
-          ▼                     ▼                     ▼
-┌───────────────────┐ ┌───────────────────┐ ┌───────────────────┐
-│ PostgreSQL / Neon │ │  Mercado Pago API │ │ SaaS Control Panel│
-│ (Data Consistency)│ │ (Payment Polling) │ │ (BI & Analytics)  │
-└───────────────────┘ └───────────────────┘ └───────────────────┘
+Requires Node.js, npm, and access to a PostgreSQL instance. From this project directory:
+
+```bash
+npm install
+```
+
+Create a `.env` file in the project root and configure the database connection and application settings:
+
+```env
+PORT=3003
+NODE_ENV=development
+MYDELIVERY_DB=postgresql://user:password@localhost:5432/mydelivery
+JWT_KEY=your_local_secret_key
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
+UPLOAD_DRIVER=local
+```
+
+`ALLOWED_ORIGINS` accepts a comma-separated list of origins. `UPLOAD_DRIVER` must be set to `local` or `cloudinary`. To use Cloudinary, also configure `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`.
+
+The password recovery service uses `ETHEREAL_USER` and `ETHEREAL_PASSWORD`, along with `CUSTOMER_CLIENT_URL` and `PROVIDER_CLIENT_URL` to build the links sent to the apps.
+
+To create any missing tables in the configured database, run:
+
+```bash
+npm run migrations
+```
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+Additional command:
+
+```bash
+npm start
+```
+
+`npm start` compiles the TypeScript and starts the application. During development, `npm run dev` runs the TypeScript entry point with Nodemon.
+
+## Related applications
+
+- [My Delivery — customer app](https://my-delivery-silk.vercel.app)
+- [My Delivery Provider — store dashboard](https://my-delivery-provider.vercel.app)
+- [SaaS Dashboard](https://dashboard-project-nu-one.vercel.app/)
+- [Portfolio](https://portfolio-vtu0.onrender.com)
