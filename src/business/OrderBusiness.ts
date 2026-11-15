@@ -163,21 +163,39 @@ export default class OrderBusiness{
     }
 
 
-    public markOrderAsFinished = async(orderId:string):Promise<void>=>{
+    public markOrderAsFinished = async(
+        orderId:string,
+        providerId:string
+    ):Promise<void>=>{
         const order = await this.orderData.findOrderById(orderId)
+       
         if(!order){
             throw new AppError(404, 'Order not found')
         }
-        await this.orderData.updateOrderStatusToFinished(orderId)
+
+        if(order.provider !== providerId){
+            throw new AppError(403, 'You do not have permission to update this order')
+        }
+
+        await this.orderData.updateOrderStatusToFinished(orderId, providerId)
     }
 
 
-    public revertOrderToRequested = async(orderId:string):Promise<void>=>{
+    public revertOrderToRequested = async(
+        orderId:string, 
+        providerId:string
+    ):Promise<void>=>{
+        
         const order = await this.orderData.findOrderById(orderId)
         if(!order){
             throw new AppError(404, 'Order not found')
         }
-        await this.orderData.updateOrderStatusToRequested(orderId)
+
+        if(order.provider !== providerId){
+            throw new AppError(403, 'You do not have permission to update this order')
+        }
+        
+        await this.orderData.updateOrderStatusToRequested(orderId, providerId)
     }
 
 

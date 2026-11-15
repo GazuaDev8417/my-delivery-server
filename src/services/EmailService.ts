@@ -3,21 +3,28 @@ import nodemailer from 'nodemailer'
 
 
 export default class EmailService{
-    private transporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        auth: {
-            user: process.env.ETHEREAL_USER,
-            pass: process.env.ETHEREAL_PASSWORD
-        }
-    })
+    private createTestTransporter = async()=>{
+        const testAccount = await nodemailer.createTestAccount()
+
+        return nodemailer.createTransport({
+            host: 'smtp.ethereal.email',
+            port: 587,
+            secure: false,
+            auth: {
+                user: testAccount.user,
+                pass: testAccount.pass
+            }
+        })
+    }
 
 
     public sendPasswordResetEmail = async(email:string, token:string):Promise<string>=>{
         const customertUrl = process.env.CUSTOMER_CLIENT_URL
+        const transporter = await this.createTestTransporter()
 
-        const info = await this.transporter.sendMail({
-            from: 'My Delivery app',
+
+        const info = await transporter.sendMail({
+            from: '"My Delivery app" <noreply@mydelivery.com>',
             to: email,
             subject: 'Password reset request',
             html: `
@@ -38,9 +45,10 @@ export default class EmailService{
     
     public restaurantPasswordResetEmail = async(email:string, token:string):Promise<string>=>{
         const providerUrl = process.env.PROVIDER_CLIENT_URL
+        const transporter = await this.createTestTransporter()
 
-        const info = await this.transporter.sendMail({
-            from: 'My Delivery Provider app',
+        const info = await transporter.sendMail({
+            from: '"My Delivery Provider app" <noreply@mydelivery.com>',
             to: email,
             subject: 'Password reset request',
             html: `

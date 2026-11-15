@@ -113,10 +113,13 @@ export default class OrderController {
 
     public markOrderAsFinished = async (req: Request, res: Response): Promise<void> => {
         try {
-            await this.services.authenticateRestaurant(req);
+            const restaurant = await this.services.authenticateRestaurant(req);
             const { id } = req.params;
 
-            await this.orderBusiness.markOrderAsFinished(id as string);
+            await this.orderBusiness.markOrderAsFinished(
+                id as string,
+                restaurant.id
+            );
 
             res.status(200).json({ message: "Order status updated to finished." });
         } catch (error: any) {
@@ -126,10 +129,13 @@ export default class OrderController {
 
     public revertOrderToRequested = async (req: Request, res: Response): Promise<void> => {
         try {
-            await this.services.authenticateRestaurant(req);
+            const restaurant = await this.services.authenticateRestaurant(req);
             const { id } = req.params;
 
-            await this.orderBusiness.revertOrderToRequested(id as string);
+            await this.orderBusiness.revertOrderToRequested(
+                id as string,
+                restaurant.id
+            );
 
             res.status(200).json({ message: "Order status reverted to requested." });
         } catch (error: any) {

@@ -328,27 +328,46 @@ export default class OrderData extends ConnectToDatabase{
     }
 
 
-    public updateOrderStatusToFinished = async(id:string):Promise<void>=>{
+    public updateOrderStatusToFinished = async(
+        id:string,
+        providerId:string
+    ):Promise<void>=>{
         try{
+            const updatedRows = await ConnectToDatabase.con(this.ORDER_TABLE)
+                .where({ id, provider: providerId })
+                .update({ state: 'FINISHED' })
 
-            await ConnectToDatabase.con(this.ORDER_TABLE).update({
-                state: 'FINISHED'
-            }).where({ id })
-
+            if(updatedRows === 0){
+                throw new AppError(404, 'Order not found for this provider')
+            }
         }catch(e:any){
+            if(e instanceof AppError){
+                throw e
+            }
+            
             throw new Error(`Error marking order as finished: ${e.message || e}`)
         }
     }
 
 
-    public updateOrderStatusToRequested = async(id:string):Promise<void>=>{
+    public updateOrderStatusToRequested = async(
+        id:string,
+        providerId:string
+    ):Promise<void>=>{
         try{
-
-            await ConnectToDatabase.con(this.ORDER_TABLE).update({
-                state: 'REQUESTED'
-            }).where({ id })
+            const updatedRows = await ConnectToDatabase.con(this.ORDER_TABLE)
+                .where({ id, provider: providerId})
+                .update({ state: 'REQUESTED'})
+                
+            if(updatedRows === 0){
+                throw new AppError(404, 'Order not found for this provider')
+            }
 
         }catch(e:any){
+            if(e instanceof AppError){
+                throw e
+            }
+
             throw new Error(`Error reverting order to requested: ${e.message || e}`)
         }
     }
