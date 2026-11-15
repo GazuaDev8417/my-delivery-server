@@ -142,7 +142,7 @@ export default class UserBusiness{
 
         const user = await this.userData.findByEmail(email)
         if (!user) {
-            return `As this is a demonstration you have to insert admin@example.com to be redirected to a test email account and reset your password`
+            return `As this is a demonstration you have to insert visitor1@email.com to be redirected to a test email account and reset your password`
         }
        
         const resetToken = this.tokenService.generateResetToken(user.id)

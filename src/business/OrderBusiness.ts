@@ -6,6 +6,8 @@ import { OrderModel, UserModel, OrdersByMonthModel } from "../model/typesAndInte
 import axios from "axios"
 import { config } from "dotenv"
 import { randomUUID as uuidv4 } from "crypto"
+import { AuthenticatedActor } from '../services/Authentication'
+
 
 
 config()
@@ -39,58 +41,82 @@ export default class OrderBusiness{
     ){}
 
     public createOrder = async(user:UserModel, orderDataDTO:CreateOrderDTO):Promise<void>=>{
-        const { product, price, quantity, photoUrl, description, providerId, productId } = orderDataDTO
+        const { quantity, providerId, productId } = orderDataDTO
 
-        if (!product || !price || !quantity) {
+        if (!providerId || !productId || !quantity) {
             throw new AppError(400, "Missing required order fields");
         }
 
         if(!Number.isInteger(quantity) || quantity <= 0){
             throw new AppError(400, 'Quantity must be a positive integer')
         }
-        
+
+        const dbProduct = await this.orderData.findProductByIdAndProvider(productId, providerId)
+        if(!dbProduct){
+            throw new AppError(404, "Product not found for this provider")
+        }
+
+        const realPrice = Number(dbProduct.price)
+        const realProductName = dbProduct.name || dbProduct.product || orderDataDTO.product
+        const realDescription = dbProduct.description || orderDataDTO.description || ''
+        const realPhotoUrl = dbProduct.photoUrl || dbProduct.photo_url || orderDataDTO.photoUrl || ''
         const address = `${user.street} ${user.number}, ${user.neighbourhood} ${user.city} - ${user.state}`
         const id = this.services.idGenerator()
-        const existingOrder = await this.orderData.findRequestedOrder(product, price, description, user.id)
+
+        const existingOrder = await this.orderData.findRequestedOrder(realProductName, realPrice, realDescription, user.id)
         if(existingOrder){
-            throw new AppError(403, `You already have an active order for '${product}'. Would you like to view it?`)
+            throw new AppError(403, `You already have an active order for '${realProductName}'. Would you like to view it?`)
         }
 
         const order = new Order(
             id, 
-            product, 
-            price, 
-            photoUrl, 
+            realProductName, 
+            realPrice, 
+            realPhotoUrl, 
             quantity,
-            quantity * price,
+            Number((quantity * realPrice).toFixed(2)),
             new Date(),
             user.id,
             'REQUESTED',
             address,
-            description,
+            realDescription,
             providerId,
             productId
         )
 
         await this.orderData.createOrder(order, productId, providerId, quantity)
     }
+
+
+    private verifyOrderAccess(order: OrderModel, actor: AuthenticatedActor): void {
+        const isOwnerUser = actor.role === 'USER' && order.client === actor.id;
+        const isOwnerRestaurant = actor.role === 'RESTAURANT' && order.provider === actor.id;
+
+        if (!isOwnerUser && !isOwnerRestaurant) {
+            throw new AppError(403, 'You do not have permission to access or modify this order');
+        }
+    }
     
 
-    public getOrderById = async(orderId:string):Promise<OrderModel>=>{
+    public getOrderById = async(orderId:string, actor: AuthenticatedActor):Promise<OrderModel>=>{
         const order = await this.orderData.findOrderById(orderId)
         if(!order){
             throw new AppError(404, 'Order not found')
         }
+
+        this.verifyOrderAccess(order, actor)
        
         return order
     }
 
    
-    public deleteOrder = async (orderId: string): Promise<void> => {
+    public deleteOrder = async (orderId: string, actor: AuthenticatedActor): Promise<void> => {
         const order = await this.orderData.findOrderById(orderId)
         if(!order){
             throw new AppError(404, 'Order not found')
         }
+
+        this.verifyOrderAccess(order, actor)
 
         await this.orderData.deleteOrder(order);
     }
@@ -110,9 +136,18 @@ export default class OrderBusiness{
     }
 
 
-    public updateOrderQuantity = async (orderId: string, quantity: number): Promise<void> => {
-        if (!quantity || quantity <= 0) {
+    public updateOrderQuantity = async (orderId: string, quantity: number, userId: string): Promise<void> => {
+        if (!Number.isInteger(quantity) || quantity <= 0) {
             throw new AppError(400, "Please provide a valid quantity");
+        }
+
+        const order = await this.orderData.findOrderById(orderId)
+        if (!order) {
+            throw new AppError(404, 'Order not found');
+        }
+
+        if(order.client !== userId){
+            throw new AppError(403, 'You do not have permission to update this order')
         }
 
         await this.orderData.updateOrderQuantity(quantity, orderId);
@@ -228,23 +263,38 @@ export default class OrderBusiness{
     } 
     
     
-    public processPayment = async(paymentDTO:PaymentDTO):Promise<any>=>{
+    public processPayment = async(paymentDTO:PaymentDTO, user:UserModel):Promise<any>=>{
         try{
-            const { paymentMethodId, email, items } = paymentDTO
-            const orderId = `${email}-${Date.now()}`
-            const totalAmount = items.reduce(
-                (acc: number, item: any) => acc + (item.unit_price * item.quantity),
+            const { paymentMethodId } = paymentDTO
+
+            if(!paymentMethodId){
+                throw new AppError(400, "Payment method is required")
+            }
+
+            const activeOrders = await this.orderData.findActiveOrdersByClient(user.id)
+            if(!activeOrders || activeOrders.length === 0){
+                throw new AppError(400, "You do not have any active orders to pay for")
+            }
+
+            const totalAmount = activeOrders.reduce(
+                (acc: number, order: any) => acc + Number(order.total || (order.price * order.quantity)),
                 0
             )
+
+            if(totalAmount <= 0){
+                throw new AppError(400, "Invalid total order amount")
+            }
+            
+            const orderId = `${user.email}-${Date.now()}`
             
             const payload:any = {
                 transaction_amount: Number(totalAmount.toFixed(2)),
                 description: 'In-app Purchase',
                 payment_method_id: paymentMethodId,
                 payer: {
-                    email: email,
-                    first_name: 'Customer',
-                    last_name: 'Test',
+                    email: user.email,
+                    first_name: user.username || 'Customer',
+                    last_name: 'Client',
                     identification: {
                         type: 'CPF',
                         number: '19119119100'
@@ -271,6 +321,10 @@ export default class OrderBusiness{
 
             return response.data
         }catch(e:any){
+            if(e instanceof AppError){
+                throw e
+            }
+
             if(axios.isAxiosError(e)){
                 throw new AppError(
                     e.response?.status || 500,
@@ -283,15 +337,32 @@ export default class OrderBusiness{
     }
     
     
-    public getPaymentStatus = async(paymentId:string):Promise<string>=>{
+    public getPaymentStatus = async(paymentId:string, user:UserModel):Promise<string>=>{
         try{
             
+            if(!paymentId){
+                throw new AppError(400, "Payment ID is required")
+            }
+
             const response = await axios.get(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-                headers: { Authorization: `Bearer ${process.env.ACCESS_TOKEN}` }
+                headers: { Authorization: `Bearer ${process.env.ACCESS_TOKEN?.trim()}` }
             })
+
+            const externalRef: string = response.data.external_reference || ''
+            const payerEmail: string  = response.data.payer?.email || ''
+
+            const isOwner = externalRef.startsWith(`${user.email}`) || payerEmail === user.email
+
+            if(!isOwner){
+                throw new AppError(403, "You do not have permission to view this payment status")
+            }
 
             return response.data.status                      
         }catch(e:any){
+            if(e instanceof AppError){
+                throw e
+            }
+
             if(axios.isAxiosError(e)){
                 throw new AppError(
                     e.response?.status || 500,

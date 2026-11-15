@@ -46,6 +46,20 @@ export default class OrderData extends ConnectToDatabase{
     }
 
 
+    public findProductByIdAndProvider = async (productId: string, providerId: string): Promise<any | undefined> => {
+        try {
+            const [product] = await ConnectToDatabase.con(this.PRODUCT_TABLE).where({
+                id: productId,
+                provider: providerId
+            });
+
+            return product;
+        } catch (e: any) {
+            throw new Error(`Error fetching product: ${e.message || e}`);
+        }
+    }
+
+
     public findRequestedOrder = async(product:string, price:number, description:string, client:string):Promise<OrderModel | undefined>=>{
         try{
 

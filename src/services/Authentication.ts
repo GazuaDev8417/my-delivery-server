@@ -17,6 +17,11 @@ type TokenData = {
     exp:number
 }
 
+export type AuthenticatedActor = {
+    id: string;
+    role: 'USER' | 'RESTAURANT';
+}
+
 
 export class AppError extends Error{
     constructor(public statusCode: number, message: string){
@@ -41,10 +46,14 @@ export default class Services{
     }
 
     public getTokenData = (token:string):TokenData=>{
-        return jwt.verify(
-            token,
-            process.env.JWT_KEY as string
-        ) as TokenData
+        try{
+            return jwt.verify(
+                token,
+                process.env.JWT_KEY as string
+            ) as TokenData
+        }catch(error){
+            throw new AppError(401, "Invalid or expired token")
+        }
     }
 
     public hashPassword = (txt:string):string=>{
@@ -56,6 +65,29 @@ export default class Services{
 
     public comparePassword = (txt:string, hash:string):boolean=>{
         return bcrypt.compareSync(txt, hash)
+    }
+
+    public authenticateActor = async (req: Request): Promise<AuthenticatedActor> => {
+        const authHeader = req.headers.authorization;
+        
+        if (!authHeader) {
+            throw new AppError(401, "Authorization header is missing");
+        }
+
+        const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
+        const tokenData = this.getTokenData(token);
+
+        const user = await this.userData.getProfile(tokenData.payload);
+        if (user) {
+            return { id: user.id, role: 'USER' };
+        }
+
+        const restaurant = await this.restaurantData.findRestaurantById(tokenData.payload);
+        if (restaurant) {
+            return { id: restaurant.id, role: 'RESTAURANT' };
+        }
+
+        throw new AppError(401, "Invalid or unauthorized token");
     }
 
     public authenticateUser = async(req:Request):Promise<UserModel>=>{

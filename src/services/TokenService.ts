@@ -11,10 +11,12 @@ export default class TokenService{
     constructor(){
         this.jwtKey = process.env.JWT_KEY as string
     }
+
     public generateToken = (payload:string):string=>{
         return jwt.sign(
             { payload },
-            this.jwtKey
+            this.jwtKey,
+            { expiresIn: '24h' }
         )
     }
 

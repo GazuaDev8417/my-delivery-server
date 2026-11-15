@@ -38,8 +38,9 @@ export default class OrderController {
 
     public getOrderById = async (req: Request, res: Response): Promise<void> => {
         try {
+            const actor = await this.services.authenticateActor(req)
             const { id } = req.params;
-            const order = await this.orderBusiness.getOrderById(id as string);
+            const order = await this.orderBusiness.getOrderById(id as string, actor);
 
             res.status(200).json(order);
         } catch (error: any) {
@@ -49,8 +50,9 @@ export default class OrderController {
 
     public deleteOrder = async (req: Request, res: Response): Promise<void> => {
         try {
+            const actor = await this.services.authenticateActor(req)
             const { id } = req.params;
-            await this.orderBusiness.deleteOrder(id as string);
+            await this.orderBusiness.deleteOrder(id as string, actor);
 
             res.status(200).json({ message: "Order successfully deleted." });
         } catch (error: any) {
@@ -85,10 +87,11 @@ export default class OrderController {
 
     public updateOrderQuantity = async (req: Request, res: Response): Promise<void> => {
         try {
+            const user = await this.services.authenticateUser(req)
             const { id } = req.params;
             const { quantity } = req.body;
 
-            await this.orderBusiness.updateOrderQuantity(id as string, quantity);
+            await this.orderBusiness.updateOrderQuantity(id as string, quantity, user.id);
 
             res.status(200).json({ message: "Order quantity updated successfully." });
         } catch (error: any) {
@@ -204,8 +207,9 @@ export default class OrderController {
 
     public processPayment = async (req: Request, res: Response): Promise<void> => {
         try {
+            const user = await this.services.authenticateUser(req)
             const paymentDTO: PaymentDTO = req.body;
-            const responseData = await this.orderBusiness.processPayment(paymentDTO);
+            const responseData = await this.orderBusiness.processPayment(paymentDTO, user);
 
             res.status(200).json({
                 orderId: responseData.external_reference,
@@ -224,8 +228,9 @@ export default class OrderController {
 
     public getPaymentStatus = async (req: Request, res: Response): Promise<void> => {
         try {
+            const user = await this.services.authenticateUser(req)
             const { id } = req.params;
-            const status = await this.orderBusiness.getPaymentStatus(id as string);
+            const status = await this.orderBusiness.getPaymentStatus(id as string, user);
 
             res.status(200).json({ status });
         } catch (error: any) {
