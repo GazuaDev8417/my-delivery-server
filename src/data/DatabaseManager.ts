@@ -12,6 +12,8 @@ export default class DatabaseManager extends ConnectToDatabase{
     static PROVIDER_NOTIFICATION_TABLE = 'provider_notifications'
     static USERS_NOTIFICATION_MATRIX_TABLE = 'matrix_customer_notifications'
     static USERS_NOTIFICATION_TABLE = 'customer_notifications'
+    static PAYMENTS_TABLE = 'payments'
+    static PAYMENT_ORDERS_TABLE = 'payment_orders'
 
 
     public static async createUsersTable():Promise<void>{
@@ -232,6 +234,67 @@ export default class DatabaseManager extends ConnectToDatabase{
             console.log(`Error creating notifications table: ${e}`)
         }
     }
+//=========================== PAYMENT TABLES =================================
+    public static async createPaymentsTable(): Promise<void> {
+        try {
+            const exists = await this.con.schema.hasTable(this.PAYMENTS_TABLE)
+
+            if (!exists) {
+                await this.con.schema.createTable(this.PAYMENTS_TABLE, (table) => {
+                    table.string('id', 36).primary().notNullable()
+                    table.string('client_id', 36)
+                        .notNullable()
+                        .references('id')
+                        .inTable(this.USER_TABLE)
+                    table.string('external_reference', 150).notNullable().unique()
+                    table.string('mercado_pago_id', 50).unique()
+                    table.decimal('amount', 10, 2).notNullable()
+                    table.string('method', 30).notNullable()
+                    table.string('status', 30).notNullable().defaultTo('PENDING')
+                    table.timestamp('created_at').notNullable().defaultTo(this.con.fn.now())
+                    table.timestamp('expires_at').notNullable()
+                })
+
+                console.log(`${this.PAYMENTS_TABLE} table was created successfully`)
+            } else {
+                console.log(`${this.PAYMENTS_TABLE} table already exists!`)
+            }
+        } catch (error) {
+            console.error(`Error creating ${this.PAYMENTS_TABLE} table:`, error)
+            throw error
+        }
+    }
+
+    public static async createPaymentOrdersTable(): Promise<void> {
+        try {
+            const exists = await this.con.schema.hasTable(this.PAYMENT_ORDERS_TABLE)
+
+            if (!exists) {
+                await this.con.schema.createTable(this.PAYMENT_ORDERS_TABLE, (table) => {
+                    table.string('payment_id', 36)
+                        .notNullable()
+                        .references('id')
+                        .inTable(this.PAYMENTS_TABLE)
+
+                    table.string('order_id', 36)
+                        .notNullable()
+                        .references('id')
+                        .inTable(this.ORDER_TABLE)
+
+                    table.primary(['payment_id', 'order_id'])
+                    table.index('order_id')
+                })
+
+                console.log(`${this.PAYMENT_ORDERS_TABLE} table was created successfully`)
+            } else {
+                console.log(`${this.PAYMENT_ORDERS_TABLE} table already exists!`)
+            }
+        } catch (error) {
+            console.error(`Error creating ${this.PAYMENT_ORDERS_TABLE} table:`, error)
+            throw error
+        }
+    }
+
 
 
     public static async closeConnexion():Promise<void>{
@@ -246,6 +309,8 @@ export default class DatabaseManager extends ConnectToDatabase{
     await DatabaseManager.createRestaurantsTable()
     await DatabaseManager.createProductsTable()
     await DatabaseManager.createOrdersTable()
+    await DatabaseManager.createPaymentsTable()
+    await DatabaseManager.createPaymentOrdersTable()
     await DatabaseManager.createResetPasswordTable()
     await DatabaseManager.createMatrixProviderNotificationsTable()
     await DatabaseManager.createProviderNotificationsTable()

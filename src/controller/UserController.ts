@@ -74,10 +74,13 @@ export default class UserController {
 
     public getProfileByUser = async (req: Request, res: Response): Promise<void> => {
         try {
-            await this.services.authenticateRestaurant(req);
+            const restaurant = await this.services.authenticateRestaurant(req)
             const { id } = req.params;
 
-            const userProfile = await this.userBusiness.getProfileByUser(id as string);
+            const userProfile = await this.userBusiness.getProfileByProvider(
+                id as string,
+                restaurant.id
+            );
 
             res.status(200).json(userProfile);
         } catch (error: any) {

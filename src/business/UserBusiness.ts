@@ -122,6 +122,23 @@ export default class UserBusiness{
     }
 
 
+    public getProfileByProvider = async(
+        targetuserId:string,
+        providerId:string
+    ):Promise<UserModel>=>{
+        const profile = await this.userData.getProfileForProvider(
+            targetuserId,
+            providerId
+        )
+
+        if(!profile){
+            throw new AppError(404, "User profile not found");
+        }
+
+        return profile
+    }
+
+
     public getAllUsers = async (providerId:string): Promise<UserModel[]> => {
         const users = await this.userData.getAllUsers(providerId)
 

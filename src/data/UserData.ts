@@ -84,6 +84,36 @@ export default class UserData extends ConnectToDatabase{
         }
     }
 
+
+    public getProfileForProvider = async(
+        userId:string,
+        providerId:string
+    ):Promise<UserModel | undefined>=>{
+        try{
+            const [user] = await ConnectToDatabase.con(this.USER_TABLE)
+                .join(this.ORDER_TABLE, `${this.ORDER_TABLE}.client`, `${this.USER_TABLE}.id`)
+                .where(`${this.USER_TABLE}.id`, userId)
+                .andWhere(`${this.ORDER_TABLE}.provider`, providerId)
+                .select(
+                    `${this.USER_TABLE}.id`,
+                    `${this.USER_TABLE}.username`,
+                    `${this.USER_TABLE}.email`,
+                    `${this.USER_TABLE}.street`,
+                    `${this.USER_TABLE}.cep`,
+                    `${this.USER_TABLE}.number`,
+                    `${this.USER_TABLE}.neighbourhood`,
+                    `${this.USER_TABLE}.city`,
+                    `${this.USER_TABLE}.state`,
+                    `${this.USER_TABLE}.complement`,
+                    `${this.USER_TABLE}.phone`
+                )
+
+            return user
+        }catch(error:any){
+            throw new Error(`Failed to fetch provider customer profile: ${error.message || error}`)
+        }
+    }
+
     
     public findByEmail = async (email: string): Promise<UserModel | undefined> => {
         try {

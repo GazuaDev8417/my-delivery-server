@@ -118,6 +118,10 @@ export default class OrderBusiness{
 
         this.verifyOrderAccess(order, actor)
 
+        if(actor.role === 'RESTAURANT' && order.state === 'REQUESTED'){
+            throw new AppError(403, 'Providers cannot delete pending orders')
+        }
+
         await this.orderData.deleteOrder(order);
     }
 
