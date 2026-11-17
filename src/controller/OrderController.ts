@@ -99,18 +99,7 @@ export default class OrderController {
         }
     };
 
-    public finishAllClientOrders = async (req: Request, res: Response): Promise<void> => {
-        try {
-            const user = await this.services.authenticateUser(req);
-
-            await this.orderBusiness.finishAllOrdersByClient(user.id);
-
-            res.status(200).json({ message: "All orders marked as finished." });
-        } catch (error: any) {
-            this.handleError(res, error);
-        }
-    };
-
+    
     public markOrderAsFinished = async (req: Request, res: Response): Promise<void> => {
         try {
             const restaurant = await this.services.authenticateRestaurant(req);
@@ -153,6 +142,17 @@ export default class OrderController {
             this.handleError(res, error);
         }
     };
+
+    public getPaidOrders = async(req:Request, res:Response):Promise<void>=>{
+        try{
+            const user = await this.services.authenticateUser(req)
+            const orders = await this.orderBusiness.getPaidOrders(user.id)
+
+            res.status(200).json(orders)
+        }catch(error:any){
+            this.handleError(res, error)
+        }
+    }
 
     public getAllOrders = async (req: Request, res: Response): Promise<void> => {
         try {

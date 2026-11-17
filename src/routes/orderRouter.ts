@@ -3,13 +3,15 @@ import OrderController from "../controller/OrderController";
 import OrderBusiness from "../business/OrderBusiness";
 import OrderData from "../data/OrderData";
 import Services from "../services/Authentication";
+import PaymentData from "../data/PaymentData";
 
 export const orderRouter = Router();
 
 // Instantiating dependencies
 const services = new Services();
 const orderData = new OrderData();
-const orderBusiness = new OrderBusiness(orderData, services);
+const paymentData = new PaymentData()
+const orderBusiness = new OrderBusiness(orderData, services, paymentData);
 const orderController = new OrderController(orderBusiness, services);
 
 // ==========================================
@@ -71,6 +73,7 @@ orderRouter.get("/all", orderController.getAllOrders);
 orderRouter.get("/recent", orderController.getRecentOrders);
 orderRouter.get("/by-month", orderController.ordersByMonth);
 orderRouter.get("/user/:id", orderController.getActiveOrdersByUserId);
+orderRouter.get("/paid", orderController.getPaidOrders)
 
 /**
  * @openapi
@@ -144,7 +147,6 @@ orderRouter.get("/:id", orderController.getOrderById);
  *         description: Invalid quantity value.
  */
 orderRouter.patch("/:id/quantity", orderController.updateOrderQuantity);
-orderRouter.patch("/finish_orders", orderController.finishAllClientOrders);
 
 /**
  * @openapi

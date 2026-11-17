@@ -7,6 +7,19 @@ type ActiveOrderRaw = {
     total: string | number
 }
 
+type LocalPayment = {
+    id:string
+    mercado_pago_id:string | null
+    status:string
+}
+
+type ExpiredPaymentCandidate = {
+    id:string
+    client_id:string
+    merdado_pago_id:string | null
+    expires_at:Date | string
+}
+
 
 export default class PaymentData extends ConnectToDatabase {
     protected ORDER_TABLE = "orders"
@@ -44,7 +57,11 @@ export default class PaymentData extends ConnectToDatabase {
                     'paymentOrder.payment_id'
                 )
                 .whereIn('paymentOrder.order_id', orderIds)
-                .andWhere('payment.status', 'PENDING')
+                .andWhere(function(){
+                    this.where('payment.status', 'PENDING')
+                        .orWhere('payment.status', 'APPROVED')
+                })
+                .andWhere('payment.client_id', clientId)
                 .first('payment.id')
 
             if(existingPendingPayment){
@@ -88,5 +105,89 @@ export default class PaymentData extends ConnectToDatabase {
                 orderIds
             }
         })
+    }
+
+    public saveGatewayResult = async(
+        internalPaymentId:string,
+        mercadoPagoId:string,
+        gatewayStatus:string
+    ):Promise<void>=>{
+        if(!internalPaymentId || !mercadoPagoId || !gatewayStatus){
+            throw new AppError(400, "Payment result fields are required")
+        }
+
+        const normalizedStatus = gatewayStatus.toLowerCase()
+        const pendingStatuses = [
+            "pending",
+            "in_process",
+            "authorized",
+            "in_mediation"
+        ]
+        const rejectedStatuses = [
+            "rejected",
+            "cancelled",
+            "refunded",
+            "charged_back"
+        ]
+
+        const status = normalizedStatus === 'approved'
+            ? 'APPROVED'
+            : rejectedStatuses.includes(normalizedStatus)
+                ? 'REJECTED'
+                : pendingStatuses.includes(normalizedStatus)
+                    ? 'PENDING'
+                    : 'PENDING'
+        
+        const updatedRows = await ConnectToDatabase.con(this.PAYMENTS_TABLE)
+            .where({ id: internalPaymentId })
+            .update({
+                mercado_pago_id: mercadoPagoId,
+                status
+            })
+            .returning('id')
+        
+        if(updatedRows.length !== 1){
+            throw new AppError(404, "Local payment record not found")
+        }
+    }
+
+    public markPaymentRejected = async(internalPaymentId:string):Promise<void>=>{
+        const updatedRows = await ConnectToDatabase.con(this.PAYMENTS_TABLE)
+            .where({
+                id: internalPaymentId,
+                status: 'PENDING'
+            })
+            .update({ status: 'REJECTED' })
+            .returning('id')
+        
+        if(updatedRows.length !== 1){
+            throw new AppError(500, "Could not mark the payment as rejected")
+        }
+    }
+
+    public findPaymentForClient = async(
+        internalPaymentId:string,
+        clientId:string
+    ):Promise<LocalPayment | undefined>=>{
+        const [payment]: LocalPayment[] = await ConnectToDatabase.con(this.PAYMENTS_TABLE)
+            .select('id', 'mercado_pago_id', 'status')
+            .where({
+                id: internalPaymentId,
+                client_id: clientId
+            })
+
+        return payment
+    }
+
+    public findExpiredPendingPayments = async():Promise<ExpiredPaymentCandidate[]>=>{
+        try{
+            return await ConnectToDatabase.con(this.PAYMENTS_TABLE)
+                .select('id', 'client_id', 'mercado_pago_id', 'expires_at')
+                .where('status', 'PENDING')
+                .andWhere('expires_at', '<=', new Date())
+                .whereNotNull('mercado_pago_id')
+        }catch(error:any){
+            throw new Error(`Error finding expired payments: ${error.message || error}`)
+        }
     }
 }

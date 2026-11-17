@@ -11,6 +11,8 @@ export default class OrderData extends ConnectToDatabase{
     protected ORDER_TABLE = 'orders'
     protected USER_TABLE = 'users'
     protected PRODUCT_TABLE = 'products'
+    protected PAYMENTS_TABLE = 'payments'
+    protected PAYMENT_ORDERS_TABLE = 'payment_orders'
 
     
     public createOrder = async(order:Orders, productId:string, providerId:string, quantity:number):Promise<void>=>{
@@ -157,12 +159,48 @@ export default class OrderData extends ConnectToDatabase{
 
     public findActiveOrdersByClient = async(client:string):Promise<OrderModel[]>=>{
         try{
-            
+            const paymentOrdersTable = this.PAYMENT_ORDERS_TABLE
+            const paymentsTable = this.PAYMENTS_TABLE
+
             return await ConnectToDatabase.con(this.ORDER_TABLE)
                 .where({ client, state: 'REQUESTED' })
-
+                .whereNotExists(function(){
+                    this.select(1)
+                        .from(`${paymentOrdersTable} as payment_orders`)
+                        .join(
+                            `${paymentsTable} as payments`,
+                            'payments.id',
+                            'payment_orders.payment_id'
+                        )
+                        .whereRaw('payment_orders.order_id = orders.id')
+                        .andWhere('payments.client_id', client)
+                        .andWhere('payments.status', 'APPROVED')
+                })
         }catch(e:any){
             throw new Error(`Error fetching active orders: ${e.message || e}`)
+        }
+    }
+
+
+    public findPaidOrdersByClient = async(clientId:string):Promise<OrderModel[]>=>{
+        try{
+            return await ConnectToDatabase.con(this.ORDER_TABLE)
+                .join(
+                    this.PAYMENT_ORDERS_TABLE,
+                    `${this.PAYMENT_ORDERS_TABLE}.order_id`,
+                    `${this.ORDER_TABLE}.id`
+                )
+                .join(
+                    this.PAYMENTS_TABLE,
+                    `${this.PAYMENTS_TABLE}.id`,
+                    `${this.PAYMENT_ORDERS_TABLE}.payment_id`
+                )
+                .where(`${this.PAYMENTS_TABLE}.client_id`, clientId)
+                .andWhere(`${this.PAYMENTS_TABLE}.status`, 'APPROVED')
+                .select(`${this.ORDER_TABLE}.*`)
+                .distinct()
+        }catch(error:any){
+            throw new Error(`Error fetching paid orders: ${error.message || error}`)
         }
     }
 
@@ -311,19 +349,6 @@ export default class OrderData extends ConnectToDatabase{
             }
             const message = e instanceof Error ? e.message : String(e)
             throw new Error(`Error updating quantity: ${message}`)
-        }
-    }
-
-
-    public finishAllOrdersByClient = async(clientId:string):Promise<void>=>{
-        try{
-
-            await ConnectToDatabase.con(this.ORDER_TABLE).update({
-                state: 'FINISHED'
-            }).where({ client: clientId, state: 'REQUESTED' })
-
-        }catch(e:any){
-            throw new Error(`Error finishing all orders: ${e.message || e}`)
         }
     }
 

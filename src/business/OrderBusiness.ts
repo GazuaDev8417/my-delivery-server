@@ -6,6 +6,7 @@ import { OrderModel, UserModel, OrdersByMonthModel } from "../model/typesAndInte
 import axios from "axios"
 import { config } from "dotenv"
 import { randomUUID as uuidv4 } from "crypto"
+import PaymentData from "../data/PaymentData"
 import { AuthenticatedActor } from '../services/Authentication'
 
 
@@ -28,8 +29,8 @@ export interface CreateOrderDTO{
 
 export interface PaymentDTO {
     paymentMethodId: string
-    email: string
-    items: Array<{ unit_price: number, quantity: number }>
+    // email: string
+    // items: Array<{ unit_price: number, quantity: number }>
 }
 
 
@@ -37,7 +38,8 @@ export interface PaymentDTO {
 export default class OrderBusiness{
     constructor(
         private orderData:OrderData,
-        private services:Services
+        private services:Services,
+        private paymentData: PaymentData
     ){}
 
     public createOrder = async(user:UserModel, orderDataDTO:CreateOrderDTO):Promise<void>=>{
@@ -158,15 +160,6 @@ export default class OrderBusiness{
     }
 
 
-    public finishAllOrdersByClient = async(userId:string):Promise<void>=>{
-        const activeOrders = await this.orderData.findActiveOrdersByClient(userId)
-        if(activeOrders.length === 0){
-            throw new AppError(400, 'All orders have already been finished or none exist')
-        }
-        await this.orderData.finishAllOrdersByClient(userId)
-    }
-
-
     public markOrderAsFinished = async(
         orderId:string,
         providerId:string
@@ -230,6 +223,17 @@ export default class OrderBusiness{
     }
 
 
+    public getPaidOrders = async(userId:string):Promise<OrderModel[]>=>{
+        const orders = await this.orderData.findPaidOrdersByClient(userId)
+
+        if(orders.length === 0){
+            throw new AppError(404, 'No paid orders found')
+        }
+
+        return orders
+    }
+
+
     public getAllOrders = async(providerId:string):Promise<OrderModel[]>=>{
         const orders = await this.orderData.findAllOrders(providerId)
         //await this.removeExpiredOrders(orders)
@@ -286,32 +290,34 @@ export default class OrderBusiness{
     
     
     public processPayment = async(paymentDTO:PaymentDTO, user:UserModel):Promise<any>=>{
+        let internalPaymentId:string | undefined
+        let localPaymentCreated = false
+
         try{
-            const { paymentMethodId } = paymentDTO
+            const paymentMethodId = paymentDTO.paymentMethodId?.trim()
 
-            if(!paymentMethodId){
-                throw new AppError(400, "Payment method is required")
+            if(paymentMethodId !== 'pix'){
+                throw new AppError(400, "Only Pix payments are currently supported")
             }
 
-            const activeOrders = await this.orderData.findActiveOrdersByClient(user.id)
-            if(!activeOrders || activeOrders.length === 0){
-                throw new AppError(400, "You do not have any active orders to pay for")
+            const accessToken = process.env.ACCESS_TOKEN?.trim()
+
+            if(!accessToken){
+                throw new AppError(500, "Payment service is not configured")
             }
 
-            const totalAmount = activeOrders.reduce(
-                (acc: number, order: any) => acc + Number(order.total || (order.price * order.quantity)),
-                0
+            internalPaymentId = uuidv4()
+
+            const { amount } = await this.paymentData.createPendingPayment(
+                user.id,
+                internalPaymentId,
+                paymentMethodId
             )
+            localPaymentCreated = true
 
-            if(totalAmount <= 0){
-                throw new AppError(400, "Invalid total order amount")
-            }
-            
-            const orderId = `${user.email}-${Date.now()}`
-            
-            const payload:any = {
-                transaction_amount: Number(totalAmount.toFixed(2)),
-                description: 'In-app Purchase',
+            const payload = {
+                transaction_amount: amount,
+                description: 'My Delivery order',
                 payment_method_id: paymentMethodId,
                 payer: {
                     email: user.email,
@@ -322,12 +328,7 @@ export default class OrderBusiness{
                         number: '19119119100'
                     }
                 },
-                external_reference: orderId
-            }
-
-
-            if(['visa', 'master', 'amex'].includes(paymentMethodId)){
-                payload.installments = 1
+                external_reference: internalPaymentId
             }
 
             const response = await axios.post(
@@ -335,63 +336,124 @@ export default class OrderBusiness{
                 payload,
                 {
                     headers: {
-                        Authorization: `Bearer ${process.env.ACCESS_TOKEN?.trim()}`,
-                        'X-Idempotency-Key': uuidv4()
+                        Authorization: `Bearer ${accessToken}`,
+                        "X-Idempotency-Key": internalPaymentId
                     }
                 }
             )
 
-            return response.data
-        }catch(e:any){
-            if(e instanceof AppError){
-                throw e
+            if(!response.data?.id || !response.data?.status){
+                throw new AppError(502, "Payment provider returned an incomplete response")
             }
 
-            if(axios.isAxiosError(e)){
+            await this.paymentData.saveGatewayResult(
+                internalPaymentId,
+                String(response.data.id),
+                String(response.data.status)
+            )
+
+            return response.data
+        }catch(error:unknown){
+            if(error instanceof AppError){
+                throw error
+            }
+
+            if(axios.isAxiosError(error)){
+                const responseStatus = error.response?.status
+
+                if(
+                    localPaymentCreated &&
+                    internalPaymentId &&
+                    responseStatus !== undefined &&
+                    responseStatus >= 400 &&
+                    responseStatus < 500
+                ){
+                    await this.paymentData.markPaymentRejected(internalPaymentId)  
+                }
+
                 throw new AppError(
-                    e.response?.status || 500,
-                    e.response?.data?.message || 'Payment processing failed'
+                    responseStatus || 502,
+                    error.response?.data?.message || 'Payment processing failed'
                 )
             }
 
-            throw new AppError(500, e.message || 'Internal server error while processing payment')
-        }     
+            throw new AppError(
+                    500,
+                    error instanceof Error
+                        ? error.message
+                        : 'Unexpected payment error'
+                )
+        }    
     }
-    
-    
-    public getPaymentStatus = async(paymentId:string, user:UserModel):Promise<string>=>{
+
+
+    public getPaymentStatus = async(
+        internalPaymentId:string,
+        user:UserModel
+    ):Promise<string>=>{
         try{
-            
-            if(!paymentId){
+            if(!internalPaymentId){
                 throw new AppError(400, "Payment ID is required")
             }
 
-            const response = await axios.get(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-                headers: { Authorization: `Bearer ${process.env.ACCESS_TOKEN?.trim()}` }
-            })
+            const payment = await this.paymentData.findPaymentForClient(
+                internalPaymentId,
+                user.id
+            )
 
-            const externalRef: string = response.data.external_reference || ''
-            const payerEmail: string  = response.data.payer?.email || ''
-
-            const isOwner = externalRef.startsWith(`${user.email}`) || payerEmail === user.email
-
-            if(!isOwner){
-                throw new AppError(403, "You do not have permission to view this payment status")
+            if(!payment){
+                throw new AppError(404, "Payment not found")
             }
 
-            return response.data.status                      
-        }catch(e:any){
-            if(e instanceof AppError){
-                throw e
+            if(!payment.mercado_pago_id){
+                throw new AppError(409, "Payment is still being registered")
             }
 
-            if(axios.isAxiosError(e)){
+            const accessToken = process.env.ACCESSTOKEN?.trim()
+
+            if(!accessToken){
+                throw new AppError(500, "Payment service is not configured")
+            }
+
+            const response = await axios.get(
+                `https://api.mercadopago.com/v1/payments/${payment.mercado_pago_id}`,
+                {
+                    headers: { Authorization: `Bearer ${accessToken}`}
+                }
+            )
+
+            if(
+                String(response.data.id) !== payment.mercado_pago_id ||
+                response.data.external_reference !== payment.id
+            ){
+                throw new AppError(403, "Payment does not match this order")
+            }
+
+            const status = String(response.data.status)
+
+            await this.paymentData.saveGatewayResult(
+                payment.id,
+                payment.mercado_pago_id,
+                status
+            )
+
+            return status
+        }catch(error){
+            if(error instanceof AppError){
+                throw error
+            }
+
+            if(axios.isAxiosError(error)){
                 throw new AppError(
-                    e.response?.status || 500,
-                    'Unable to retrieve payment status'
+                    error.response?.status || 502,
+                    error.response?.data?.message || 'Unable to retrieve payment status'
                 )
             }
-            throw new AppError(500, e.message || 'Failed to fetch payment status')
+
+            throw new AppError(
+                500,
+                error instanceof Error ? error.message : 'Unexpected payment status error'
+            )
         }
     }
 }
