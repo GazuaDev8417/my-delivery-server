@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import OrderBusiness, { CreateOrderDTO, PaymentDTO } from "../business/OrderBusiness";
 import Services, { AppError } from "../services/Authentication";
+import { timingSafeEqual } from "crypto";
+
+
 
 export default class OrderController {
     constructor(
@@ -242,5 +245,33 @@ export default class OrderController {
         } catch (error: any) {
             this.handleError(res, error);
         }
-    };    
+    };
+    
+    public reconcileExpiredPendingPayments = async(
+        req:Request,
+        res:Response
+    ):Promise<void>=>{
+        try{
+            const conSecret = process.env.CRON_SECRET?.trim()
+
+            if(!conSecret){
+                throw new AppError(503, "Scheduled payment reconciliation is not configured")
+            }
+
+            const providedAuthorization = Buffer.from(req.header('authorization') || '')
+            const expectedAuthorization = Buffer.from(`Bearer ${conSecret}`)
+
+            if(
+                providedAuthorization.length !== expectedAuthorization.length ||
+                !timingSafeEqual(providedAuthorization, expectedAuthorization)
+            ){
+                throw new AppError(401, "Unauthorized")  
+            }
+
+            const result = await this.orderBusiness.reconcileExpiredPendingPayments()
+            res.status(200).json(result)
+        }catch(error:any){
+            this.handleError(res, error)
+        }
+    }
 }

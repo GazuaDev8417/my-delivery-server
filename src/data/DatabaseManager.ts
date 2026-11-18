@@ -136,6 +136,7 @@ export default class DatabaseManager extends ConnectToDatabase{
                     table.timestamp('moment').notNullable()
                     table.string('client', 255).notNullable()
                     table.string('state', 50).notNullable()
+                    table.timestamp('archived_at').nullable()
                     table.string('address', 255).notNullable()
                     table.text('description').notNullable()
                     table.string('payment', 10)

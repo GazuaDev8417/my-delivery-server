@@ -53,6 +53,13 @@ export default class OrderBusiness{
             throw new AppError(400, 'Quantity must be a positive integer')
         }
 
+        if(await this.paymentData.hasPendingPaymentForClient(user.id)){
+            throw new AppError(
+                409,
+                'You already have a pending payment. Please complete or cancel this payment before placing another order.'
+            )
+        }
+
         const dbProduct = await this.orderData.findProductByIdAndProvider(productId, providerId)
         if(!dbProduct){
             throw new AppError(404, "Product not found for this provider")
@@ -124,6 +131,11 @@ export default class OrderBusiness{
             throw new AppError(403, 'Providers cannot delete pending orders')
         }
 
+        if(actor.role === 'RESTAURANT' && order.state === 'EXPIRED'){
+            await this.orderData.archiveExpireOrder(order.id, actor.id)
+            return
+        }
+
         await this.orderData.deleteOrder(order);
     }
 
@@ -174,6 +186,10 @@ export default class OrderBusiness{
             throw new AppError(403, 'You do not have permission to update this order')
         }
 
+        if(order.state !== 'REQUESTED'){
+            throw new AppError(409, 'Only requested orders can be marked as finished.')
+        }
+
         await this.orderData.updateOrderStatusToFinished(orderId, providerId)
     }
 
@@ -190,6 +206,10 @@ export default class OrderBusiness{
 
         if(order.provider !== providerId){
             throw new AppError(403, 'You do not have permission to update this order')
+        }
+
+        if(order.state !== 'FINISHED'){
+            throw new AppError(409, 'Only finished orders can be returned to pending.')
         }
         
         await this.orderData.updateOrderStatusToRequested(orderId, providerId)
@@ -235,7 +255,7 @@ export default class OrderBusiness{
 
 
     public getAllOrders = async(providerId:string):Promise<OrderModel[]>=>{
-        const orders = await this.orderData.findAllOrders(providerId)
+        const orders = await this.orderData.findVisibleOrdersByProvider(providerId)
         //await this.removeExpiredOrders(orders)
         
         if(orders.length === 0){
@@ -409,7 +429,7 @@ export default class OrderBusiness{
                 throw new AppError(409, "Payment is still being registered")
             }
 
-            const accessToken = process.env.ACCESSTOKEN?.trim()
+            const accessToken = process.env.ACCESS_TOKEN?.trim()
 
             if(!accessToken){
                 throw new AppError(500, "Payment service is not configured")
@@ -455,5 +475,253 @@ export default class OrderBusiness{
                 error instanceof Error ? error.message : 'Unexpected payment status error'
             )
         }
+    }
+
+
+    public cancelPayment = async(
+        internalPaymentId: string,
+        user: UserModel
+    ):Promise<void>=>{
+        try{
+            const paymentId = internalPaymentId?.trim()
+
+            if(!paymentId){
+                throw new AppError(400, "Payment ID is required")
+            }
+
+            const payment = await this.paymentData.findPaymentForClient(
+                paymentId,
+                user.id
+            )
+
+            if(!payment){
+                throw new AppError(404, "Payment not found")
+            }
+
+            if(payment.status !== 'PENDING'){
+                throw new AppError(409, "Only pending payments can be cancelled")
+            }
+
+            const mercadoPagoId = payment.mercado_pago_id
+
+            if(!mercadoPagoId){
+                throw new AppError(409, "Payment is still being registered")
+            }
+
+            const orderStatus = await this.paymentData.findPaymentOrderStates(payment.id)
+
+            if(
+                orderStatus.length === 0 ||
+                orderStatus.some((state) => state !== 'REQUESTED')
+            ){
+                throw new AppError(
+                    409,
+                    "Payment cannot be cancelled because an associated order is no longer pending"
+                )  
+            }
+
+            const accessToken = process.env.ACCESS_TOKEN?.trim()
+
+            if(!accessToken){
+                throw new AppError(500, "Payment service is not configured")
+            }
+
+            const paymentUrl = `https://api.mercadopago.com/v1/payments/${mercadoPagoId}`
+            const requestConfig = {
+                headers: { Authorization: `Bearer ${accessToken}` },
+                timeout: 5000
+            }
+
+            const paymentResponse = await axios.get(paymentUrl, requestConfig)
+
+            if(
+                String(paymentResponse.data?.id) !== mercadoPagoId ||
+                paymentResponse.data?.exertnal_reference !== payment.id
+            ){
+                throw new AppError(502, "Payment provider returned a mismatched payment")
+            }
+
+            let gatewayStatus = String(paymentResponse.data?.status || '').toLowerCase()
+
+            if(gatewayStatus === 'approved'){
+                await this.paymentData.saveGatewayResult(
+                    payment.id,
+                    mercadoPagoId,
+                    gatewayStatus
+                )
+                throw new AppError(409, "An approved payment cannot be cancelled")
+            }
+
+            if(gatewayStatus === 'pending'){
+                const cancellationResponse = await axios.put(
+                    paymentUrl,
+                    { status: 'cancelled' },
+                    requestConfig
+                )
+
+                if(
+                    String(cancellationResponse.data?.id) !== mercadoPagoId ||
+                    cancellationResponse.data?.external_reference !== payment.id
+                ){
+                    throw new AppError(502, "Payment provider returned a mismatched cancellation")
+                }
+
+                gatewayStatus = String(cancellationResponse.data?.status || '').toLocaleLowerCase()
+            }
+
+            if(gatewayStatus === 'approved'){
+                await this.paymentData.saveGatewayResult(
+                    payment.id,
+                    mercadoPagoId,
+                    gatewayStatus
+                )
+                throw new AppError(409, "An approved payment cannot be cancelled")
+            }
+
+            if(gatewayStatus !== 'cancelled' && gatewayStatus !== 'reject'){
+                throw new AppError(409, "Payment provider did not confirm cancellation")
+            }
+
+            const finalized = await this.paymentData.cancelPendingPaymentRestoreStock(payment.id)
+
+            if(!finalized){
+                throw new AppError(409, "Payment could not be finalized as cancelled")
+            }
+
+        }catch(error:unknown){
+            if(error instanceof AppError){
+                throw error
+            }
+
+            if(axios.isAxiosError(error)){
+                throw new AppError(
+                    error.response?.status || 502,
+                    error.response?.data?.message || 'Unable to cancel payment'
+                )
+            }
+
+            throw new AppError(
+                500,
+                error instanceof Error
+                    ? error.message
+                    : 'Unexpected payment cancellation error'
+            )
+        }
+    }
+
+
+    public reconcileExpiredPendingPayments = async():Promise<{
+        checked:number
+        approved:number
+        stillPending:number
+        expired:number
+        unchanged:number
+    }>=>{
+        const accessToken = process.env.ACCESS_TOKEN?.trim()
+
+        if(!accessToken){
+            throw new AppError(500, "Payment service is not configured")
+        }
+
+        const payments = await this.paymentData.findExpiredPendingPayments()
+        const results = await Promise.allSettled(payments.map(async(payment)=>{
+            const response = await axios.get(
+                `https://api.mercadopago.com/v1/payments/${payment.mercado_pago_id}`,
+                {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                    timeout: 5000
+                }
+            )
+
+            if(
+                String(response.data?.id) !== payment.mercado_pago_id ||
+                response.data?.external_reference !== payment.id
+            ){
+                throw new AppError(502, "Payment provider returned a mismatched payment")
+            }
+
+            let status = String(response.data?.status || '').toLowerCase()
+
+            if(status === 'pending'){
+                const cancellationResponse = await axios.put(
+                    `https://api.mercadopago.com/v1/payments/${payment.mercado_pago_id}`,
+                    { status: 'cancelled' },
+                    {
+                        headers: { Authorization: `Bearer ${accessToken}` },
+                        timeout: 5000
+                    }
+                )
+
+                if(
+                    String(cancellationResponse.data?.id) !== payment.mercado_pago_id ||
+                    cancellationResponse.data?.external_reference !== payment.id
+                ){
+                    throw new AppError(502, "Payment provider returned a mismatched cancellation")
+                }
+
+                status = String(cancellationResponse.data?.status || '').toLowerCase()
+            }
+            
+            if(status === 'approved'){
+                await this.paymentData.saveGatewayResult(
+                    payment.id,
+                    payment.mercado_pago_id,
+                    status
+                )
+                return 'approved' as const
+            }
+
+            if(status === 'cancelled' || status === 'rejected'){
+                const expired = await this.paymentData.expirePaymentAndRestoreStock(payment.id)
+                return expired ? 'expired' as const : 'unchanged' as const
+            }
+
+            if(
+                status === 'pending' ||
+                status === 'in_process' ||
+                status === 'authorized' ||
+                status === 'in_mediation'
+            ){
+                await this.paymentData.saveGatewayResult(
+                    payment.id,
+                    payment.mercado_pago_id,
+                    status
+                )
+                return 'stillPending' as const
+            }
+
+            console.warn(
+                `Payment ${payment.id} has an unhandled Mercado Pago status: ${status || 'empty'}`
+            )
+            return 'unchanged' as const
+        }))   
+
+        const summary = {
+            checked: payments.length,
+            approved: 0,
+            stillPending: 0,
+            expired: 0,
+            unchanged: 0
+        }
+        let failures = 0
+
+        results.forEach((result, index)=>{
+            if(result.status === 'rejected'){
+                failures++
+                console.error(
+                    `Failed to reconcile payment ${payments[index].id}:`,
+                    result.reason
+                )
+                return
+            }
+
+            summary[result.value]++
+        })
+
+        if(failures > 0){
+            throw new AppError(502, `Failed to reconcile ${failures} expired payment(s)`)
+        }
+
+        return summary
     }
 }

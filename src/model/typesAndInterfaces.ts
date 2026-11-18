@@ -45,7 +45,7 @@ export interface OrderModel{
     total:number
     moment:string 
     client:string
-    state: 'REQUESTED' | 'FINISHED'
+    state: 'REQUESTED' | 'FINISHED' | 'EXPIRED'
     provider:string
     productid:string
 }

@@ -225,3 +225,4 @@ orderRouter.delete("/:id", orderController.deleteOrder);
 // Payments integration
 orderRouter.post("/payment", orderController.processPayment);
 orderRouter.get("/payment/:id/status", orderController.getPaymentStatus);
+orderRouter.get('/cron/expire-pending-payments', orderController.reconcileExpiredPendingPayments)

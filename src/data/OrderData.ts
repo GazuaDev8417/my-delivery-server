@@ -100,6 +100,17 @@ export default class OrderData extends ConnectToDatabase{
     }
 
 
+    public findVisibleOrdersByProvider = async(providerId:string):Promise<OrderModel[]>=>{
+        try{
+            return await ConnectToDatabase.con(this.ORDER_TABLE)
+                .where({ provider: providerId })
+                .whereNull('archived_at')
+        }catch(e:any){
+            throw new Error(`Error fetching visible provider orders: ${e.message || e}`)
+        }
+    }
+
+
     public findRecentOrders = async(providerId:string):Promise<OrderModel[]>=>{
         try{
 
@@ -211,6 +222,7 @@ export default class OrderData extends ConnectToDatabase{
             return await ConnectToDatabase.con(this.ORDER_TABLE)
                 .where({ client })
                 .andWhere({ provider: providerId })
+                .whereNull('archived_at')
         }catch(e:any){
             throw new Error(`Error fetching client orders: ${e.message || e}`)
         }
@@ -287,6 +299,22 @@ export default class OrderData extends ConnectToDatabase{
     }
 
 
+    public archiveExpireOrder = async(orderId:string, providerId:string):Promise<void>=>{
+        const updatedRows = await ConnectToDatabase.con(this.ORDER_TABLE)
+            .where({
+                id: orderId,
+                provider: providerId,
+                state: 'EXPIRED'
+            })
+            .whereNull('archived_at')
+            .update({ archived_at: new Date() })
+
+        if(updatedRows !== 1){
+            throw new AppError(409, 'Only unarchived expired orders can be archived.')
+        }
+    }
+
+
     public updateOrderQuantity = async(quantity:number, id:string):Promise<void>=>{
         if(!Number.isInteger(quantity) || quantity <= 0){
             throw new AppError(400, 'Quantity must be a positive integer')
@@ -359,7 +387,7 @@ export default class OrderData extends ConnectToDatabase{
     ):Promise<void>=>{
         try{
             const updatedRows = await ConnectToDatabase.con(this.ORDER_TABLE)
-                .where({ id, provider: providerId })
+                .where({ id, provider: providerId, state: 'REQUESTED' })
                 .update({ state: 'FINISHED' })
 
             if(updatedRows === 0){
@@ -381,7 +409,7 @@ export default class OrderData extends ConnectToDatabase{
     ):Promise<void>=>{
         try{
             const updatedRows = await ConnectToDatabase.con(this.ORDER_TABLE)
-                .where({ id, provider: providerId})
+                .where({ id, provider: providerId, state: 'FINISHED' })
                 .update({ state: 'REQUESTED'})
                 
             if(updatedRows === 0){

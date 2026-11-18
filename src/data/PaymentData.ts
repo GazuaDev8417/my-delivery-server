@@ -16,15 +16,40 @@ type LocalPayment = {
 type ExpiredPaymentCandidate = {
     id:string
     client_id:string
-    merdado_pago_id:string | null
+    mercado_pago_id:string
     expires_at:Date | string
 }
+
+type OrderToFinalize = {
+    id: string
+    productid: string
+    provider: string
+    quantity: number
+    state: string
+}
+
+type TerminalPaymentStatus = 'EXPIRED' | 'CANCELLED'
 
 
 export default class PaymentData extends ConnectToDatabase {
     protected ORDER_TABLE = "orders"
     protected PAYMENTS_TABLE = "payments"
     protected PAYMENT_ORDERS_TABLE = "payment_orders" 
+    protected PRODUCT_TABLE = "products"
+
+
+
+    public hasPendingPaymentForClient = async(clientid:string):Promise<boolean>=>{
+        const pendingPayment = await ConnectToDatabase.con(this.PAYMENTS_TABLE)
+            .select('id')
+            .where({
+                client_id: clientid,
+                status: 'PENDING'
+            })
+            .first()
+
+        return Boolean(pendingPayment)
+    }
 
     public createPendingPayment = async(
         clientId:string,
@@ -117,29 +142,16 @@ export default class PaymentData extends ConnectToDatabase {
         }
 
         const normalizedStatus = gatewayStatus.toLowerCase()
-        const pendingStatuses = [
-            "pending",
-            "in_process",
-            "authorized",
-            "in_mediation"
-        ]
-        const rejectedStatuses = [
-            "rejected",
-            "cancelled",
-            "refunded",
-            "charged_back"
-        ]
-
+        
         const status = normalizedStatus === 'approved'
             ? 'APPROVED'
-            : rejectedStatuses.includes(normalizedStatus)
-                ? 'REJECTED'
-                : pendingStatuses.includes(normalizedStatus)
-                    ? 'PENDING'
-                    : 'PENDING'
+            : 'PENDING'
+
+        const terminalStatuses = ['EXPIRED', 'CANCELLED']
         
         const updatedRows = await ConnectToDatabase.con(this.PAYMENTS_TABLE)
             .where({ id: internalPaymentId })
+            .whereNotIn('status', terminalStatuses)
             .update({
                 mercado_pago_id: mercadoPagoId,
                 status
@@ -147,6 +159,13 @@ export default class PaymentData extends ConnectToDatabase {
             .returning('id')
         
         if(updatedRows.length !== 1){
+            const payment = await ConnectToDatabase.con(this.PAYMENTS_TABLE)
+                .select('status')
+                .where({ id: internalPaymentId })
+                .first()
+            
+            if(terminalStatuses.includes(payment?.status ?? '')) return
+            
             throw new AppError(404, "Local payment record not found")
         }
     }
@@ -179,6 +198,24 @@ export default class PaymentData extends ConnectToDatabase {
         return payment
     }
 
+    public findPaymentOrderStates = async(
+        internalPaymentId:string
+    ):Promise<string[]>=>{
+        const orders:Array<{ state:string }> = await ConnectToDatabase.con(this.ORDER_TABLE)
+            .join(
+                this.PAYMENT_ORDERS_TABLE,
+                `${this.PAYMENT_ORDERS_TABLE}.order_id`,
+                `${this.ORDER_TABLE}.id`
+            )
+            .select(`${this.ORDER_TABLE}.state`)
+            .where(
+                `${this.PAYMENT_ORDERS_TABLE}.payment_id`,
+                internalPaymentId
+            )
+        
+        return orders.map((order) => order.state)
+    }
+
     public findExpiredPendingPayments = async():Promise<ExpiredPaymentCandidate[]>=>{
         try{
             return await ConnectToDatabase.con(this.PAYMENTS_TABLE)
@@ -186,8 +223,137 @@ export default class PaymentData extends ConnectToDatabase {
                 .where('status', 'PENDING')
                 .andWhere('expires_at', '<=', new Date())
                 .whereNotNull('mercado_pago_id')
+                .orderBy('expires_at', 'asc')
+                .limit(10)
         }catch(error:any){
             throw new Error(`Error finding expired payments: ${error.message || error}`)
         }
+    }    
+
+    private finalizePendingPaymentAndRestoreStock = async(
+        internalPaymentId:string,
+        terminalStatus:TerminalPaymentStatus,
+        requireExpiration:boolean
+    ):Promise<boolean>=>{
+        const now = new Date()
+
+        return ConnectToDatabase.con.transaction(async(trx)=>{
+            const paymentQuery = trx(this.PAYMENTS_TABLE)
+                .select('id', 'mercado_pago_id')
+                .where({
+                    id:internalPaymentId,
+                    status:'PENDING'
+                })
+
+            if(requireExpiration){
+                paymentQuery.andWhere('expires_at', '<=', now)
+            }
+
+            const [payment] = await paymentQuery.forUpdate()
+
+            if(!payment || !payment.mercado_pago_id) return false
+
+            const orders: OrderToFinalize[] = await trx(this.ORDER_TABLE)
+                .join(
+                    this.PAYMENT_ORDERS_TABLE,
+                    `${this.PAYMENT_ORDERS_TABLE}.order_id`,
+                    `${this.ORDER_TABLE}.id`
+                )
+                .select(
+                    `${this.ORDER_TABLE}.id`,
+                    `${this.ORDER_TABLE}.productid`,
+                    `${this.ORDER_TABLE}.provider`,
+                    `${this.ORDER_TABLE}.quantity`,
+                    `${this.ORDER_TABLE}.state`
+                )
+                .where(`${this.PAYMENT_ORDERS_TABLE}.payment_id`, internalPaymentId)
+                .forUpdate()
+            
+            if(orders.length === 0){
+                throw new AppError(409, "Payment has no associated orders")
+            }
+
+            if(
+                terminalStatus === 'CANCELLED' &&
+                orders.some((order) => order.state !== 'REQUESTED')
+            ){
+                throw new AppError(
+                    409,
+                    "All associated orders must still be requested to cancel payment"
+                )
+            }
+
+            const paymentUpdateQuery = trx(this.PAYMENTS_TABLE)
+                .where({
+                    id: internalPaymentId,
+                    status: 'PENDING'
+                })
+
+            if(requireExpiration){
+                paymentUpdateQuery.andWhere('expires_at', '<=', now)
+            }
+
+            const updatedPayments = await paymentUpdateQuery
+                .update({ status: terminalStatus })
+                .returning('id')
+            
+            if(updatedPayments.length !== 1) return false
+
+            for(const order of orders){
+                if(order.state !== 'REQUESTED') continue
+
+                const expireOrders = await trx(this.ORDER_TABLE)
+                    .where({
+                        id: order.id,
+                        state: 'REQUESTED'
+                    })
+                    .update({ state: 'EXPIRED' })
+                    .returning('id')
+                
+                if(expireOrders.length !== 1){
+                    if(terminalStatus === 'CANCELLED'){
+                        throw new AppError(
+                            409,
+                            "An associated order changed while cancelling payment"
+                        )
+                    }
+                    continue
+                }
+
+                const restoredProducts = await trx(this.PRODUCT_TABLE)
+                    .where({
+                        id: order.productid,
+                        provider: order.provider
+                    })
+                    .increment('stock', order.quantity)
+                    .returning('id')
+
+                if(restoredProducts.length !== 1){
+                    throw new Error(`Could not restore stock for order ${order.id}`)
+                }
+            }
+
+            return true
+        })
+    }
+
+    public expirePaymentAndRestoreStock = async(
+        internalPaymentId:string
+    ):Promise<boolean>=>{
+        return this.finalizePendingPaymentAndRestoreStock(
+            internalPaymentId,
+            'EXPIRED',
+            true
+        )
+    }
+
+    public cancelPendingPaymentRestoreStock = async(
+        internalPaymentId:string
+    ):Promise<boolean>=>{
+        return this.finalizePendingPaymentAndRestoreStock(
+            internalPaymentId,
+            'CANCELLED',
+            false
+        )
     }
 }
