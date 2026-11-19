@@ -33,6 +33,15 @@ export interface PaymentDTO {
     // items: Array<{ unit_price: number, quantity: number }>
 }
 
+export interface PendingPaymentResponse {
+    orderId: string
+    status: string
+    createdAt: string
+    qrCode: string | null
+    qrCodeBase64: string | null
+    qrCodeLink: string | null
+}
+
 
 
 export default class OrderBusiness{
@@ -478,6 +487,87 @@ export default class OrderBusiness{
     }
 
 
+    public getPendingPayment = async(user:UserModel):Promise<PendingPaymentResponse>=>{
+        try{
+            const payment = await this.paymentData.findPendingPaymentForClient(user.id)
+
+            if(!payment){
+                throw new AppError(404, "No pending payment found")
+            }
+
+            if(!payment.mercado_pago_id){
+                throw new AppError(409, "Payment is still being registered")
+            }
+
+            const accessToken = process.env.ACCESS_TOKEN?.trim()
+
+            if(!accessToken){
+                throw new AppError(500, "Payment service is not configured")
+            }
+
+            const response = await axios.get(
+                `https://api.mercadopago.com/v1/payments/${payment.mercado_pago_id}`,
+                {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                    timeout: 5000
+                }
+            )
+
+            if(
+                String(response.data?.id) !== payment.mercado_pago_id ||
+                response.data?.external_reference !== payment.id
+            ){
+                throw new AppError(502, "Payment provider returned a mismatched payment")
+            }
+
+            const status = String(response.data?.status || '').toLowerCase()
+
+            if(!status){
+                throw new AppError(502, "Payment provider returned an empty status")
+            }
+
+            await this.paymentData.saveGatewayResult(
+                payment.id,
+                payment.mercado_pago_id,
+                status
+            )
+
+            const transactionData = 
+                response.data?.point_of_interaciont?.transaction_data
+            
+            return {
+                orderId: payment.id,
+                status,
+                createdAt: new Date(payment.created_at).toISOString(),
+                qrCode: transactionData?.qr_code || null,
+                qrCodeBase64: transactionData?.qr_code_base64 || null,
+                qrCodeLink:
+                    transactionData?.ticket_url ||
+                    transactionData?.qr_code_link ||
+                    null
+            }
+        }catch(error:unknown){
+            if(error instanceof AppError){
+                throw error
+            }
+
+            if(axios.isAxiosError(error)){
+                throw new AppError(
+                    error.response?.status || 502,
+                    error.response?.data?.message || 'Unable to retrieve pending payment'
+                )
+            }
+
+            throw new AppError(
+                500,
+                error instanceof Error
+                    ? error.message
+                    : 'Unexpected pending payment error'
+            )
+        }
+    }
+
+
     public cancelPayment = async(
         internalPaymentId: string,
         user: UserModel
@@ -536,7 +626,7 @@ export default class OrderBusiness{
 
             if(
                 String(paymentResponse.data?.id) !== mercadoPagoId ||
-                paymentResponse.data?.exertnal_reference !== payment.id
+                paymentResponse.data?.external_reference !== payment.id
             ){
                 throw new AppError(502, "Payment provider returned a mismatched payment")
             }
@@ -578,7 +668,7 @@ export default class OrderBusiness{
                 throw new AppError(409, "An approved payment cannot be cancelled")
             }
 
-            if(gatewayStatus !== 'cancelled' && gatewayStatus !== 'reject'){
+            if(gatewayStatus !== 'cancelled' && gatewayStatus !== 'rejected'){
                 throw new AppError(409, "Payment provider did not confirm cancellation")
             }
 

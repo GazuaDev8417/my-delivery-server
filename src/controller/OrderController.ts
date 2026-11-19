@@ -246,6 +246,30 @@ export default class OrderController {
             this.handleError(res, error);
         }
     };
+
+    public getPendingPayment = async(req:Request, res:Response):Promise<void>=>{
+        try{
+            const user = await this.services.authenticateUser(req)
+            const payment = await this.orderBusiness.getPendingPayment(user)
+
+            res.status(200).json(payment)
+        }catch(error:any){
+            this.handleError(res, error)
+        }
+    }
+
+    public cancelPayment = async(req:Request, res:Response):Promise<void>=>{
+        try{
+            const user = await this.services.authenticateUser(req)
+            const { id } = req.params
+
+            await this.orderBusiness.cancelPayment(id as string, user)
+
+            res.status(200).json({ message: "Payment cancelled successfully." })
+        }catch(error:any){
+            this.handleError(res, error)
+        }
+    }
     
     public reconcileExpiredPendingPayments = async(
         req:Request,

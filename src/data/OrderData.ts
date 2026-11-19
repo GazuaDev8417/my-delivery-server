@@ -255,6 +255,17 @@ export default class OrderData extends ConnectToDatabase{
                     throw new AppError(404, 'Order not found')
                 }
 
+                const paymentLink = await trx(this.PAYMENT_ORDERS_TABLE)
+                    .where({ order_id: currentOrder.id })
+                    .first('payment_id')
+
+                if(paymentLink){
+                    throw new AppError(
+                        409,
+                        'This order is linked to a payment and cannot be deleted.'
+                    )
+                }
+
                 if(currentOrder.state === 'REQUESTED'){
                     const restoredProducts = await trx(this.PRODUCT_TABLE)
                         .where({
@@ -333,6 +344,25 @@ export default class OrderData extends ConnectToDatabase{
 
                 if(order.state !== 'REQUESTED'){
                     throw new AppError(409, 'Only requested orders can be updated.')
+                }
+
+                const paymentForOrder = await trx({
+                    paymentOrder: this.PAYMENT_ORDERS_TABLE
+                })
+                    .join(
+                        { payment: this.PAYMENTS_TABLE },
+                        'payment.id',
+                        'paymentOrder.payment_id'
+                    )
+                    .where('paymentOrder.order_id', order.id)
+                    .whereIn('payment.status', ['PENDING', 'APPROVED'])
+                    .first('payment.id')
+
+                if(paymentForOrder){
+                    throw new AppError(
+                        409,
+                        'Order quantity cannot be changed while its payment is pending or approved.'
+                    )
                 }
 
                 const difference = quantity - order.quantity

@@ -13,6 +13,13 @@ type LocalPayment = {
     status:string
 }
 
+type PendingPaymentDetails = {
+    id: string
+    mercado_pago_id: string | null
+    created_at: Date | string
+    expires_at: Date | string
+}
+
 type ExpiredPaymentCandidate = {
     id:string
     client_id:string
@@ -195,6 +202,20 @@ export default class PaymentData extends ConnectToDatabase {
                 client_id: clientId
             })
 
+        return payment
+    }
+
+    public findPendingPaymentForClient = async(clientId:string):Promise<PendingPaymentDetails | undefined>=>{
+        const payment: PendingPaymentDetails | undefined =
+            await ConnectToDatabase.con(this.PAYMENTS_TABLE)
+                .select('id', 'mercado_pago_id', 'created_at', 'expires_at')
+                .where({
+                    client_id: clientId,
+                    status: 'PENDING'
+                })
+                .orderBy('created_at', 'desc')
+                .first()  
+        
         return payment
     }
 
