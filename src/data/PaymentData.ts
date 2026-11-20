@@ -150,11 +150,12 @@ export default class PaymentData extends ConnectToDatabase {
 
         const normalizedStatus = gatewayStatus.toLowerCase()
         
-        const status = normalizedStatus === 'approved'
-            ? 'APPROVED'
-            : 'PENDING'
+        const status = 
+            normalizedStatus === 'approved' ? 'APPROVED' :
+            normalizedStatus === 'rejected' ? 'REJECTED' :
+            'PENDING'
 
-        const terminalStatuses = ['EXPIRED', 'CANCELLED']
+        const terminalStatuses = ['APPROVED', 'EXPIRED', 'CANCELLED', 'REJECTED']
         
         const updatedRows = await ConnectToDatabase.con(this.PAYMENTS_TABLE)
             .where({ id: internalPaymentId })

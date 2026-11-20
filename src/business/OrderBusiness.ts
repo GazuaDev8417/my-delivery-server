@@ -29,8 +29,14 @@ export interface CreateOrderDTO{
 
 export interface PaymentDTO {
     paymentMethodId: string
-    // email: string
-    // items: Array<{ unit_price: number, quantity: number }>
+    token?: string
+    issuerId?: string
+    payerEmail?: string
+    installments?: number
+    payerIdentification?: {
+        type: string
+        number: string
+    }
 }
 
 export interface PendingPaymentResponse {
@@ -325,9 +331,53 @@ export default class OrderBusiness{
         try{
             const paymentMethodId = paymentDTO.paymentMethodId?.trim()
 
-            if(paymentMethodId !== 'pix'){
-                throw new AppError(400, "Only Pix payments are currently supported")
+            if(!paymentMethodId){
+                throw new AppError(400, "Payment method is required")
             }
+
+            const isPix = paymentMethodId === 'pix'
+            let cardData: {
+                token: string
+                issuerId: string
+                installments: number
+                payerEmail: string
+                payerIdentification: { type: string, number: string }
+            } | undefined
+
+            if(!isPix){
+                const token = paymentDTO.token?.trim()
+                const issuerId = paymentDTO.issuerId?.trim()
+                const installments = paymentDTO.installments
+                const payerEmail = paymentDTO.payerEmail?.trim()
+                const identificationType = paymentDTO.payerIdentification?.type?.trim()
+                const identificationNumber = paymentDTO.payerIdentification?.number?.trim()
+
+                if(
+                    !token ||
+                    !issuerId ||
+                    typeof installments !== 'number' ||
+                    !Number.isInteger(installments) ||
+                    installments < 1 ||
+                    !payerEmail ||
+                    !identificationType ||
+                    !identificationNumber 
+                ){
+                    throw new AppError(400, "Card payment data is incomplete")
+                }
+
+                cardData = {
+                    token,
+                    issuerId,
+                    installments,
+                    payerEmail,
+                    payerIdentification: {
+                        type: identificationType,
+                        number: identificationNumber
+                    }
+                }
+            }
+
+            
 
             const accessToken = process.env.ACCESS_TOKEN?.trim()
 
@@ -344,7 +394,8 @@ export default class OrderBusiness{
             )
             localPaymentCreated = true
 
-            const payload = {
+            const payload = isPix
+                ? {
                 transaction_amount: amount,
                 description: 'My Delivery order',
                 payment_method_id: paymentMethodId,
@@ -358,7 +409,21 @@ export default class OrderBusiness{
                     }
                 },
                 external_reference: internalPaymentId
-            }
+            } : {
+                    transaction_amount: amount,
+                    description: 'My Delivery order',
+                    token: cardData?.token,
+                    installments: cardData?.installments,
+                    payment_method_id: paymentMethodId,
+                    issuer_id: cardData?.issuerId,
+                    payer: {
+                        email: cardData?.payerEmail,
+                        first_name: user.username || 'Customer',
+                        last_name: 'Client',
+                        identification: cardData?.payerIdentification
+                    },
+                    external_reference: internalPaymentId
+                }
 
             const response = await axios.post(
                 'https://api.mercadopago.com/v1/payments',
