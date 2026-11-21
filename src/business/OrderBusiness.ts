@@ -146,8 +146,11 @@ export default class OrderBusiness{
             throw new AppError(403, 'Providers cannot delete pending orders')
         }
 
-        if(actor.role === 'RESTAURANT' && order.state === 'EXPIRED'){
-            await this.orderData.archiveExpireOrder(order.id, actor.id)
+        if(
+            actor.role === 'RESTAURANT' && 
+            (order.state === 'EXPIRED' || order.state === 'FINISHED')
+        ){
+            await this.orderData.archiveOrder(order.id, actor.id)
             return
         }
 
@@ -203,6 +206,10 @@ export default class OrderBusiness{
 
         if(order.state !== 'REQUESTED'){
             throw new AppError(409, 'Only requested orders can be marked as finished.')
+        }
+
+        if(!await this.paymentData.hasApprovedPaymentForOrder(orderId)){
+            throw new AppError(409, 'Only paid orders can be completed.')
         }
 
         await this.orderData.updateOrderStatusToFinished(orderId, providerId)
@@ -443,8 +450,15 @@ export default class OrderBusiness{
             await this.paymentData.saveGatewayResult(
                 internalPaymentId,
                 String(response.data.id),
-                String(response.data.status)
+                String(response.data.status),
+                response.data.date_approved
             )
+
+            if(String(response.data.status).toLowerCase() === 'rejected'){
+                await this.paymentData.expireRejectedPaymentAndRestoreStock(
+                    internalPaymentId
+                )
+            }
 
             return response.data
         }catch(error:unknown){
@@ -528,7 +542,8 @@ export default class OrderBusiness{
             await this.paymentData.saveGatewayResult(
                 payment.id,
                 payment.mercado_pago_id,
-                status
+                status,
+                response.data.date_approved
             )
 
             return status
@@ -594,7 +609,8 @@ export default class OrderBusiness{
             await this.paymentData.saveGatewayResult(
                 payment.id,
                 payment.mercado_pago_id,
-                status
+                status,
+                response.data.date_approved
             )
 
             const transactionData = 

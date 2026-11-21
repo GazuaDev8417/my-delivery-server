@@ -48,6 +48,8 @@ export interface OrderModel{
     state: 'REQUESTED' | 'FINISHED' | 'EXPIRED'
     provider:string
     productid:string
+    payment_status?: string | null
+    payment_approved_at?: Date | string | null
 }
 
 export interface OrdersByMonthModel {

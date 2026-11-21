@@ -253,11 +253,22 @@ export default class DatabaseManager extends ConnectToDatabase{
                     table.string('method', 30).notNullable()
                     table.string('status', 30).notNullable().defaultTo('PENDING')
                     table.timestamp('created_at').notNullable().defaultTo(this.con.fn.now())
+                    table.timestamp('approved_at').nullable()
                     table.timestamp('expires_at').notNullable()
                 })
 
                 console.log(`${this.PAYMENTS_TABLE} table was created successfully`)
             } else {
+                const hasApprovedAt = await this.con.schema.hasColumn(
+                    this.PAYMENTS_TABLE,
+                    'approved_at'
+                )
+
+                if(!hasApprovedAt){
+                    await this.con.schema.alterTable(this.PAYMENTS_TABLE, (table)=>{
+                        table.timestamp('approved_at').nullable()
+                    })
+                }
                 console.log(`${this.PAYMENTS_TABLE} table already exists!`)
             }
         } catch (error) {

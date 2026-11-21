@@ -62,14 +62,37 @@ export default class OrderData extends ConnectToDatabase{
     }
 
 
-    public findRequestedOrder = async(product:string, price:number, description:string, client:string):Promise<OrderModel | undefined>=>{
+    public findRequestedOrder = async(
+        product:string, 
+        price:number, 
+        description:string, 
+        client:string
+    ):Promise<OrderModel | undefined>=>{
         try{
-
-            const [order] = await ConnectToDatabase.con(this.ORDER_TABLE).where({
-                product, price, description, client, state: 'REQUESTED'
-            })
+            const paymentOrdersTable = this.PAYMENT_ORDERS_TABLE
+            const paymentsTable = this.PAYMENTS_TABLE
             
-            return order
+            return await ConnectToDatabase.con(this.ORDER_TABLE)
+                .where({
+                product, 
+                price, 
+                description, 
+                client, 
+                state: 'REQUESTED'
+            })
+            .whereNotExists(function(){
+                this.select(1)
+                    .from(`${paymentOrdersTable} as payment_orders`)
+                    .join(
+                        `${paymentsTable} as payments`,
+                        'payments.id',
+                        'payment_orders.payment_id'
+                    )
+                    .whereRaw('payment_orders.order_id = orders.id')
+                    .andWhere('payments.client_id', client)
+                    .andWhere('payments.status', 'APPROVED')
+            })
+            .first()
         }catch(e:any){
             throw new Error(`Error fetching requested order: ${e.message || e}`)
         }
@@ -102,7 +125,46 @@ export default class OrderData extends ConnectToDatabase{
 
     public findVisibleOrdersByProvider = async(providerId:string):Promise<OrderModel[]>=>{
         try{
-            return await ConnectToDatabase.con(this.ORDER_TABLE)
+            const db = ConnectToDatabase.con
+
+            return await db(this.ORDER_TABLE)
+                .select(`${this.ORDER_TABLE}.*`)
+                .select(
+                    db.raw(
+                        `CASE WHEN EXISTS (
+                            SELECT 1
+                            FROM ?? AS payment_orders
+                            JOIN ?? AS payments
+                                ON payments.id = payment_orders.payment_id
+                            WHERE payment_orders.order_id = ??.id
+                                AND payments.status = ?
+                        ) THEN 'APPROVED' ELSE NULL END AS payment_status`,
+                        [
+                            this.PAYMENT_ORDERS_TABLE,
+                            this.PAYMENTS_TABLE,
+                            this.ORDER_TABLE,
+                            'APPROVED'
+                        ]
+                    )
+                )
+                .select(
+                    db.raw(
+                        `(
+                            SELECT MIN(payments.approved_at)
+                            FROM ?? AS payment_orders
+                            JOIN ?? AS payments
+                                ON payments.id = payment_orders.payment_id
+                            WHERE payment_orders.order_id = ??.id
+                                AND payments.status = ?
+                        ) AS payment_approved_at`,
+                        [
+                            this.PAYMENT_ORDERS_TABLE,
+                            this.PAYMENTS_TABLE,
+                            this.ORDER_TABLE,
+                            'APPROVED'
+                        ]
+                    )
+                )
                 .where({ provider: providerId })
                 .whereNull('archived_at')
         }catch(e:any){
@@ -218,10 +280,47 @@ export default class OrderData extends ConnectToDatabase{
 
     public findAllOrdersByClient = async(client:string, providerId:string):Promise<OrderModel[]>=>{
         try{
-            
-            return await ConnectToDatabase.con(this.ORDER_TABLE)
-                .where({ client })
-                .andWhere({ provider: providerId })
+            const db = ConnectToDatabase.con
+
+            return await db(this.ORDER_TABLE)
+                .select(`${this.ORDER_TABLE}.*`)
+                .select(
+                    db.raw(
+                        `CASE WHEN EXISTS (
+                            SELECT 1
+                            FROM ?? AS payment_orders
+                            JOIN ?? AS payments
+                                ON payments.id = payment_orders.payment_id
+                            WHERE payment_orders.order_id = ??.id
+                                AND payments.status = ?
+                        ) THEN 'APPROVED' ELSE NULL END AS payment_status`,
+                        [
+                            this.PAYMENT_ORDERS_TABLE,
+                            this.PAYMENTS_TABLE,
+                            this.ORDER_TABLE,
+                            'APPROVED'
+                        ]
+                    )
+                )
+                .select(
+                    db.raw(
+                        `(
+                            SELECT MIN(payments.approved_at)
+                            FROM ?? AS payment_orders
+                            JOIN ?? AS payments
+                                ON payments.id = payment_orders.payment_id
+                            WHERE payment_orders.order_id = ??.id
+                                AND payments.status = ?
+                        ) AS payment_approved_at`,
+                        [
+                            this.PAYMENT_ORDERS_TABLE,
+                            this.PAYMENTS_TABLE,
+                            this.ORDER_TABLE,
+                            'APPROVED'
+                        ]
+                    )
+                )
+                .where({ client, provider: providerId })
                 .whereNull('archived_at')
         }catch(e:any){
             throw new Error(`Error fetching client orders: ${e.message || e}`)
@@ -310,18 +409,18 @@ export default class OrderData extends ConnectToDatabase{
     }
 
 
-    public archiveExpireOrder = async(orderId:string, providerId:string):Promise<void>=>{
+    public archiveOrder = async(orderId:string, providerId:string):Promise<void>=>{
         const updatedRows = await ConnectToDatabase.con(this.ORDER_TABLE)
             .where({
                 id: orderId,
-                provider: providerId,
-                state: 'EXPIRED'
+                provider: providerId
             })
+            .whereIn('state', ['EXPIRED', 'FINISHED'])
             .whereNull('archived_at')
             .update({ archived_at: new Date() })
 
         if(updatedRows !== 1){
-            throw new AppError(409, 'Only unarchived expired orders can be archived.')
+            throw new AppError(409, 'Only unarchived expired or finished orders can be archived.')
         }
     }
 

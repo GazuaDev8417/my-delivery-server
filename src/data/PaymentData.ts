@@ -65,6 +65,9 @@ export default class PaymentData extends ConnectToDatabase {
     ):Promise<{ amount: number, orderIds: string[] }>=>{
         const createdAt = new Date()
         const expiresAt = new Date(createdAt.getTime() + 30 * 60 * 1000)
+        const paymentOrdersTable = this.PAYMENT_ORDERS_TABLE
+        const paymentsTable = this.PAYMENTS_TABLE
+
 
         return ConnectToDatabase.con.transaction(async (trx)=>{
             const orders: ActiveOrderRaw[] = await trx(this.ORDER_TABLE)
@@ -72,6 +75,18 @@ export default class PaymentData extends ConnectToDatabase {
                 .where({
                     client: clientId,
                     state: 'REQUESTED'
+                })
+                .whereNotExists(function(){
+                    this.select(1)
+                        .from(`${paymentOrdersTable} as payment_orders`)
+                        .join(
+                            `${paymentsTable} as payments`,
+                            'payments.id',
+                            'payment_orders.payment_id'
+                        )
+                        .whereRaw('payment_orders.order_id = orders.id')
+                        .andWhere('payments.client_id', clientId)
+                        .andWhere('payments.status', 'APPROVED')
                 })
                 .forUpdate()
 
@@ -142,7 +157,8 @@ export default class PaymentData extends ConnectToDatabase {
     public saveGatewayResult = async(
         internalPaymentId:string,
         mercadoPagoId:string,
-        gatewayStatus:string
+        gatewayStatus:string,
+        gatewayApprovedAt?: string | Date | null
     ):Promise<void>=>{
         if(!internalPaymentId || !mercadoPagoId || !gatewayStatus){
             throw new AppError(400, "Payment result fields are required")
@@ -154,6 +170,18 @@ export default class PaymentData extends ConnectToDatabase {
             normalizedStatus === 'approved' ? 'APPROVED' :
             normalizedStatus === 'rejected' ? 'REJECTED' :
             'PENDING'
+        
+        const approvedAt = status !== 'APPROVED'
+            ? undefined
+            : gatewayApprovedAt instanceof Date
+            ? gatewayApprovedAt
+            : gatewayApprovedAt
+            ? new Date(gatewayApprovedAt)
+            : new Date()
+
+        if(approvedAt && Number.isNaN(approvedAt.getTime())){
+            throw new AppError(400, 'Invalid payment approval date')
+        }
 
         const terminalStatuses = ['APPROVED', 'EXPIRED', 'CANCELLED', 'REJECTED']
         
@@ -162,7 +190,8 @@ export default class PaymentData extends ConnectToDatabase {
             .whereNotIn('status', terminalStatuses)
             .update({
                 mercado_pago_id: mercadoPagoId,
-                status
+                status,
+                ...(approvedAt ? { approved_at: approvedAt } : {})
             })
             .returning('id')
         
@@ -204,6 +233,20 @@ export default class PaymentData extends ConnectToDatabase {
             })
 
         return payment
+    }
+
+    public hasApprovedPaymentForOrder = async(orderId:string):Promise<boolean>=>{
+        const payment = await ConnectToDatabase.con(this.PAYMENT_ORDERS_TABLE)
+            .join(
+                 this.PAYMENTS_TABLE,
+                `${this.PAYMENTS_TABLE}.id`,
+                `${this.PAYMENT_ORDERS_TABLE}.payment_id`
+            )
+            .where(`${this.PAYMENT_ORDERS_TABLE}.order_id`, orderId)
+            .andWhere(`${this.PAYMENTS_TABLE}.status`, 'APPROVED')
+            .first(`${this.PAYMENTS_TABLE}.id`)
+
+        return Boolean(payment)
     }
 
     public findPendingPaymentForClient = async(clientId:string):Promise<PendingPaymentDetails | undefined>=>{
@@ -377,5 +420,83 @@ export default class PaymentData extends ConnectToDatabase {
             'CANCELLED',
             false
         )
+    }
+
+    public expireRejectedPaymentAndRestoreStock = async(
+        internalPaymentId:string
+    ):Promise<void>=>{
+        await ConnectToDatabase.con.transaction(async(trx)=>{
+            const [payment] = await trx(this.PAYMENTS_TABLE)
+                .select('id')
+                .where({
+                    id: internalPaymentId,
+                    status: 'REJECTED'
+                })
+                .forUpdate()
+            
+            if(!payment){
+                throw new AppError(409, 'Rejected payment was not found.')
+            }
+
+            const orders:OrderToFinalize[] = await trx(this.ORDER_TABLE)
+                .join(
+                    this.PAYMENT_ORDERS_TABLE,
+                    `${this.PAYMENT_ORDERS_TABLE}.order_id`,
+                    `${this.ORDER_TABLE}.id`
+                )
+                .select(
+                    `${this.ORDER_TABLE}.id`,
+                    `${this.ORDER_TABLE}.productid`,
+                    `${this.ORDER_TABLE}.provider`,
+                    `${this.ORDER_TABLE}.quantity`,
+                    `${this.ORDER_TABLE}.state`
+                )
+                .where(`${this.PAYMENT_ORDERS_TABLE}.payment_id`, internalPaymentId)
+                .forUpdate()
+
+            if(orders.length === 0){
+                throw new AppError(409, 'Payment has no associated orders.')
+            }
+
+            if(orders.some(order =>
+                order.state !== 'REQUESTED' && order.state !== 'EXPIRED'
+            )){
+                throw new AppError(
+                    409,
+                    'An associated order cannot be expired automatically.'
+                )
+            }
+
+            for(const order of orders){
+                if(order.state === 'EXPIRED') continue
+
+                const expiredOrders = await trx(this.ORDER_TABLE)
+                    .where({
+                        id: order.id,
+                        state: 'REQUESTED'
+                    })
+                    .update({ state: 'EXPIRED' })
+                    .returning('id')
+                
+                if(expiredOrders.length !== 1){
+                    throw new AppError(
+                        409,
+                        'An associated order changed while handling the rejected payment.'
+                    )
+                }
+
+                const restoredProducts = await trx(this.PRODUCT_TABLE)
+                    .where({
+                        id: order.productid,
+                        provider: order.provider
+                    })
+                    .increment('stock', order.quantity)
+                    .returning('id')
+
+                if(restoredProducts.length !== 1){
+                    throw new Error(`Could not restore stock for order ${order.id}`)
+                }
+            }
+        })
     }
 }
