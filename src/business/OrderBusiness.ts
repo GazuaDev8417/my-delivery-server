@@ -288,6 +288,11 @@ export default class OrderBusiness{
     }
 
 
+    public getArchivedOrders = async(providerId:string):Promise<OrderModel[]>=>{
+        return this.orderData.findArchiveOrdersByProvider(providerId)
+    }
+
+
     public getRecentOrders = async(providerId:string):Promise<OrderModel[]>=>{
         const recentOrders = await this.orderData.findRecentOrders(providerId)
         //await this.removeExpiredOrders(orders)

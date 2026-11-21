@@ -70,6 +70,7 @@ orderRouter.get("/history", orderController.getFinishedOrders);
  *         description: Order list is empty.
  */
 orderRouter.get("/all", orderController.getAllOrders);
+orderRouter.get('/archived', orderController.getArchivedOrders)
 orderRouter.get("/recent", orderController.getRecentOrders);
 orderRouter.get("/by-month", orderController.ordersByMonth);
 orderRouter.get("/user/:id", orderController.getActiveOrdersByUserId);

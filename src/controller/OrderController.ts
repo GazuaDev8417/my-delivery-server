@@ -168,6 +168,17 @@ export default class OrderController {
         }
     }
 
+    public getArchivedOrders = async(req:Request, res:Response):Promise<void>=>{
+        try{
+            const restaurant = await this.services.authenticateRestaurant(req)
+            const orders = await this.orderBusiness.getArchivedOrders(restaurant.id)
+
+            res.status(200).json(orders)
+        }catch(error:any){
+            this.handleError(res, error)
+        }
+    }
+
     public getRecentOrders = async (req: Request, res: Response): Promise<void> => {
         try {
             const restaurant = await this.services.authenticateRestaurant(req);

@@ -173,6 +173,32 @@ export default class OrderData extends ConnectToDatabase{
     }
 
 
+    public findArchiveOrdersByProvider = async(providerId:string):Promise<OrderModel[]>=>{
+        try{
+            return await ConnectToDatabase.con(`${this.ORDER_TABLE} as orders`)
+                .leftJoin(
+                    `${this.PAYMENT_ORDERS_TABLE} as payment_orders`,
+                    'payment_orders.order_id',
+                    'orders.id'
+                )
+                .leftJoin(
+                    `${this.PAYMENTS_TABLE} as payments`,
+                    'payments.id',
+                    'payment_orders.payment_id'
+                )
+                .select('orders.*')
+                .select('payments.status as payment_status')
+                .where('orders.provider', providerId)
+                .whereNotNull('orders.archived_at')
+                .orderBy('orders.archived_at', 'desc')
+        }catch(e:any){
+            throw new Error(
+                `Error fetching archived provider orders: ${e.message || e}`
+            )
+        }
+    }
+
+
     public findRecentOrders = async(providerId:string):Promise<OrderModel[]>=>{
         try{
 
